@@ -144,7 +144,7 @@ app.post('/api/bookings', async (req, res) => {
   try {
     const { id, stopId, kind, origin, destination, label, detail, confirmation, date, time } = req.body;
     await dbRun(
-      'INSERT INTO bookings (id, stopId, kind, origin, destination, label, detail, confirmation, date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+      'INSERT INTO bookings (id, stopId, kind, origin, destination, label, detail, confirmation, "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
       [id, stopId, kind, origin, destination, label, detail, confirmation, date]
     );
     res.json({ success: true });
@@ -159,7 +159,7 @@ app.put('/api/bookings/:id', async (req, res) => {
     const { id } = req.params;
     const { kind, origin, destination, label, detail, confirmation, date, time } = req.body;
     await dbRun(
-      'UPDATE bookings SET kind = $1, origin = $2, destination = $3, label = $4, detail = $5, confirmation = $6, date = $7, updatedAt = CURRENT_TIMESTAMP WHERE id = $8',
+      'UPDATE bookings SET kind = $1, origin = $2, destination = $3, label = $4, detail = $5, confirmation = $6, "date" = $7, updatedAt = CURRENT_TIMESTAMP WHERE id = $8',
       [kind, origin, destination, label, detail, confirmation, date, id]
     );
     res.json({ success: true });
@@ -184,7 +184,7 @@ app.post('/api/expenses', async (req, res) => {
   try {
     const { id, tripId, desc, amount, categoryId, stopId } = req.body;
     await dbRun(
-      'INSERT INTO expenses (id, tripId, desc, amount, categoryId, stopId) VALUES ($1, $2, $3, $4, $5, $6)',
+      'INSERT INTO expenses (id, tripId, "desc", amount, categoryId, stopId) VALUES ($1, $2, $3, $4, $5, $6)',
       [id, tripId, desc, amount, categoryId, stopId]
     );
     res.json({ success: true });
@@ -313,7 +313,7 @@ async function startServer() {
         label TEXT,
         detail TEXT,
         confirmation TEXT,
-        date TEXT,
+        "date" TEXT,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (stopId) REFERENCES stops(id)
@@ -324,7 +324,7 @@ async function startServer() {
       CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY,
         tripId TEXT NOT NULL,
-        desc TEXT,
+        "desc" TEXT,
         amount NUMERIC,
         categoryId TEXT,
         stopId TEXT,
