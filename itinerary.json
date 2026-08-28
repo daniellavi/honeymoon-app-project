@@ -1,0 +1,1016 @@
+{
+  "trip": {
+    "title": "Japan & Thailand Honeymoon",
+    "startDate": "2026-09-01",
+    "endDate": "2026-09-18",
+    "travelers": 2
+  },
+  "countries": [
+    {
+      "name": "Japan",
+      "dates": "2026-09-01 to 2026-09-18",
+      "cities": [
+        {
+          "name": "Tokyo",
+          "periods": [
+            {
+              "dates": "2026-09-01 to 2026-09-07",
+              "hotel": {
+                "name": "remm plus Ginza",
+                "address": "8-11-11 Ginza, Chuo-ku, Tokyo, Japan",
+                "checkIn": "14:00",
+                "checkOut": "12:00"
+              }
+            },
+            {
+              "dates": "2026-09-15 to 2026-09-18",
+              "hotel": {
+                "name": "Mitsui Garden Hotel Ginza Tsukiji",
+                "address": "4-7-1 Tsukiji, Chuo-ku, Tokyo, Japan",
+                "checkIn": "15:00",
+                "checkOut": "11:00"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Kyoto",
+          "dates": "2026-09-07 to 2026-09-11",
+          "hotel": {
+            "name": "Cross Hotel Kyoto",
+            "address": "71-1 Daikoku-cho, Nakagyo-ku, Kyoto, Japan",
+            "checkIn": "15:00-00:00",
+            "checkOut": "11:00",
+            "nearbyAttraction": "Round One Kyoto Kawaramachi - arcade games, bowling, darts"
+          }
+        },
+        {
+          "name": "Osaka",
+          "dates": "2026-09-11 to 2026-09-15",
+          "hotel": {
+            "name": "Karaksa Hotel Osaka Namba",
+            "address": "2-9-13 Nishishinsaibashi, Chuo-ku, Osaka, Japan",
+            "checkIn": "15:00",
+            "checkOut": "11:00"
+          }
+        }
+      ]
+    }
+  ],
+  "booked_activities": [
+    {
+      "name": "HARRY Harajuku",
+      "date": "2026-09-02",
+      "time": "13:00-14:00",
+      "type": "animal_cafe",
+      "guests": 2,
+      "notes": "Small animal cafe with hedgehogs. Branch: Harajuku Station Front. Arrive on time.",
+      "dietary_notes": "Daniel: N/A"
+    },
+    {
+      "name": "Tokyo DisneySea Park Hopper",
+      "date": "2026-09-03",
+      "type": "theme_park",
+      "guests": 2,
+      "notes": "Start at DisneySea, hop to Disneyland after 11:00. Download Tokyo Disney Resort App, link tickets beforehand, arrive early.",
+      "dietary_notes": "Daniel: N/A"
+    },
+    {
+      "name": "Warner Bros. Studio Tour Tokyo - Harry Potter",
+      "date": "2026-09-04",
+      "time": "10:30",
+      "type": "tour",
+      "notes": "Long tour (10:30-14:30/15:00). Includes free shopping voucher. Arrive before time, leave room for shopping.",
+      "dietary_notes": "Daniel: N/A"
+    },
+    {
+      "name": "Harry Potter Shopping Voucher",
+      "date": "2026-09-04",
+      "type": "shopping",
+      "notes": "Use same day as tour",
+      "dietary_notes": "Daniel: N/A"
+    },
+    {
+      "name": "Maguro Mart",
+      "date": "2026-09-06",
+      "time": "21:00",
+      "type": "restaurant",
+      "guests": 2,
+      "notes": "High-end tuna/fish restaurant",
+      "dietary_notes": "Daniel: No pork, shrimp, crab, squid, octopus, clams or oysters. Fish OK. Beef and chicken OK. Send note in advance: 'One guest does not eat pork, shrimp, crab, squid, octopus, clams or oysters. Fish is OK. Beef and chicken are OK. Please confirm if this can be accommodated.'"
+    },
+    {
+      "name": "Shinkansen Shinagawa → Kyoto",
+      "date": "2026-09-07",
+      "time": "09:17-11:21",
+      "type": "train",
+      "train": "Nozomi 245",
+      "notes": "Leave early for Shinagawa station",
+      "dietary_notes": "N/A"
+    },
+    {
+      "name": "Umeda Sky Building + Heart Padlock",
+      "date": "2026-09-13",
+      "type": "observation_deck",
+      "notes": "No fixed time, prefer sunset/evening around 18:00-19:00. Heart padlock included.",
+      "dietary_notes": "N/A"
+    },
+    {
+      "name": "USJ Studio Pass",
+      "date": "2026-09-14",
+      "type": "theme_park",
+      "notes": "Universal Studios Japan",
+      "dietary_notes": "N/A"
+    },
+    {
+      "name": "USJ Express Pass 8",
+      "date": "2026-09-14",
+      "type": "theme_park_pass",
+      "sessions": {
+        "super_nintendo_world": "10:30-11:30",
+        "mario_kart": "10:30-11:00",
+        "yoshis_adventure": "11:00-11:30",
+        "mine_cart_madness": "11:30-12:00",
+        "flight_of_hippogriff": "13:00-13:30",
+        "minion_blast": "14:00-14:30"
+      },
+      "choose_one": ["The Flying Dinosaur", "Jurassic Park - The Ride (if open)", "JAWS"],
+      "notes": "Download USJ app in advance, arrive early, check for Halloween/seasonal events",
+      "dietary_notes": "N/A"
+    },
+    {
+      "name": "Shinkansen Shin-Osaka → Shinagawa",
+      "date": "2026-09-15",
+      "time": "09:06-11:25",
+      "type": "train",
+      "train": "Nozomi 4",
+      "notes": "Return to Tokyo",
+      "dietary_notes": "N/A"
+    },
+    {
+      "name": "teamLab Planets Tokyo",
+      "date": "2026-09-16",
+      "time": "11:30",
+      "type": "experience",
+      "notes": "Interactive experience with water, barefoot walking. Don't wear short skirts/dresses, wear comfortable clothes.",
+      "dietary_notes": "N/A"
+    }
+  ],
+  "daily_itinerary": [
+    {
+      "date": "2026-09-01",
+      "day": "Monday",
+      "city": "Tokyo",
+      "hotel": "remm plus Ginza",
+      "theme": "Arrival - Relaxed day",
+      "notes": "No rigid bookings. Prepare all tickets/QR codes for upcoming days in evening. Check Suica/Pasmo/Internet.",
+      "activities": [
+        "Arrival in Tokyo",
+        "Travel to hotel",
+        "Check-in / Rest",
+        "Light walk in Ginza/Shinjuku/Don Quijote if energetic"
+      ],
+      "dining": [
+        {
+          "meal": "Suggested: Ginza Sand or Ginza Kagari",
+          "type": "casual",
+          "notes": "Don't book expensive restaurant. Keep it light for arrival day."
+        },
+        {
+          "meal": "Sushi Kenshin",
+          "type": "optional",
+          "notes": "If ordering"
+        }
+      ],
+      "dietary_notes": "Daniel: No pork-heavy dishes"
+    },
+    {
+      "date": "2026-09-02",
+      "day": "Tuesday",
+      "city": "Tokyo",
+      "hotel": "remm plus Ginza",
+      "theme": "Shinjuku / Harajuku / Omotesando / Shibuya - Busy & fun",
+      "activities": [
+        {
+          "name": "Takeshita Street + Harry Potter Shop",
+          "time": "Morning",
+          "notes": "Colorful street, shops, Harry Potter shop"
+        },
+        {
+          "name": "HARRY Harajuku",
+          "time": "13:00-14:00",
+          "notes": "BOOKED - Small animal cafe with hedgehogs, cute animals. Branch: Harajuku Station Front. Arrive on time.",
+          "booked": true
+        },
+        {
+          "name": "Kaiten Sushi Ginza Onodera",
+          "time": "14:30-15:30",
+          "type": "dining",
+          "notes": "Quality conveyor belt sushi. Good for Daniel - choose plates yourself, avoid shrimp/shellfish/octopus.",
+          "status": "spontaneous/try to book"
+        },
+        {
+          "name": "Omotesando / Shibuya exploration",
+          "time": "afternoon",
+          "activities": [
+            "Aoyama Flower Market Tea House",
+            "Iyoshi Cola - handmade Japanese cola",
+            "Shibuya PARCO",
+            "Nintendo Tokyo",
+            "Pokémon Center Shibuya",
+            "Shibuya Scramble Crossing",
+            "Hachiko",
+            "SHIBUYA TSUTAYA - view crossing"
+          ]
+        },
+        {
+          "name": "Shodai Ebisu / 初代",
+          "time": "18:00-18:30",
+          "type": "dining",
+          "notes": "Special creamy ramen/udon. Check Tabelog for booking closer to date. If not available, go spontaneously/wait in queue.",
+          "dietary_notes": "Daniel: Check no pork broth/seafood"
+        },
+        {
+          "name": "Shibuya Sky",
+          "time": "Sunset/evening",
+          "status": "to_book",
+          "notes": "Book when opens for 2.9"
+        }
+      ],
+      "spontaneous": [
+        "Marion Crepes",
+        "Totti Candy Factory",
+        "Le Shiner",
+        "DE FRITES STAAN HARAJUKU",
+        "I'm Donut? Harajuku",
+        "Harajuku Gyozaro",
+        "A Happy Pancake Omotesando",
+        "Blue Bottle Coffee",
+        "Iyoshi Cola"
+      ]
+    },
+    {
+      "date": "2026-09-03",
+      "day": "Wednesday",
+      "city": "Tokyo",
+      "hotel": "remm plus Ginza",
+      "theme": "DisneySea + Disneyland Park Hopper",
+      "activities": [
+        {
+          "name": "Tokyo DisneySea 1-Day Park Hopper Passport",
+          "notes": "BOOKED - Start at DisneySea, hop to Disneyland after 11:00",
+          "booked": true,
+          "tips": [
+            "Download Tokyo Disney Resort App",
+            "Link tickets to app",
+            "Arrive early",
+            "Check app same day for Standby Pass, Entry Request, Disney Premier Access",
+            "Don't plan on weather changes - check Klook cancellation terms if needed"
+          ],
+          "recommended_attractions": {
+            "disneysea": [
+              "Journey to the Center of the Earth",
+              "Tower of Terror",
+              "Indiana Jones",
+              "Raging Spirits",
+              "Soaring",
+              "Fantasy Springs (if available)"
+            ],
+            "disneyland": [
+              "Big Thunder Mountain",
+              "Space Mountain (if open)",
+              "Haunted Mansion",
+              "Beauty and the Beast (if want beautiful less extreme experience)"
+            ]
+          },
+          "tip": "Don't try to do everything. Pick 5-7 strong rides and enjoy the atmosphere."
+        }
+      ]
+    },
+    {
+      "date": "2026-09-04",
+      "day": "Thursday",
+      "city": "Tokyo",
+      "hotel": "remm plus Ginza",
+      "theme": "Harry Potter Studio Tokyo + Akasaka Harry Potter",
+      "activities": [
+        {
+          "name": "Warner Bros. Studio Tour Tokyo",
+          "time": "10:30",
+          "notes": "BOOKED - Leave hotel 09:15-09:30. Tour runs 10:30-14:30/15:00. Includes free shopping voucher.",
+          "booked": true,
+          "tips": ["Arrive early not last minute", "Tour is long - don't overpack after", "Save room for shopping", "Use shopping voucher same day"]
+        },
+        {
+          "name": "Akasaka Harry Potter Station",
+          "time": "afternoon",
+          "activities": [
+            "Time Turner",
+            "Mahou Dokoro Shop",
+            "Harry Potter Café / Café Window",
+            "Akasaka Sacas displays"
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-09-05",
+      "day": "Friday",
+      "city": "Tokyo",
+      "hotel": "remm plus Ginza",
+      "theme": "Tsukiji / Kappabashi / Akihabara / Maid Café",
+      "activities": [
+        {
+          "name": "Sensō-ji Temple",
+          "notes": "Amazing temple with Nakamise Shopping Street - local food market"
+        },
+        {
+          "name": "Kappabashi Kitchen Supply Town",
+          "notes": "Street with knives, serving dishes, kitchen supplies"
+        },
+        {
+          "name": "Ueno Park",
+          "notes": "Beautiful park with museums and cafes"
+        },
+        {
+          "name": "Akihabara afternoon",
+          "activities": [
+            "Game Centers",
+            "Gashapon",
+            "Anime/Gaming shops",
+            "2D Café (optional)",
+            "Kurikoan Taiyaki - taiyaki in Akihabara, spontaneous"
+          ]
+        },
+        {
+          "name": "Maid Café",
+          "time": "16:00-16:30",
+          "type": "experience",
+          "notes": "Small waitresses dressed anime/maid style. Pop culture experience, not robots. Prefer booking in advance to avoid queue.",
+          "options": [
+            "maidreamin Akihabara",
+            "@ home café Akihabara"
+          ],
+          "tips": ["Pick Akihabara branch", "Treat as fun/touristy experience not chef restaurant", "Usually has entry fee/minimum order"]
+        }
+      ],
+      "spontaneous": [
+        "Cremia Ice Cream",
+        "Kurikoan Taiyaki",
+        "2D Café",
+        "Gashapon/Arcades"
+      ]
+    },
+    {
+      "date": "2026-09-06",
+      "day": "Saturday",
+      "city": "Tokyo",
+      "hotel": "remm plus Ginza",
+      "theme": "Shinjuku + Maguro Mart evening",
+      "activities": [
+        {
+          "name": "Shinjuku Gyoen National Garden",
+          "time": "morning"
+        },
+        {
+          "name": "COIS Espresso Club Shinjuku Gyoemmae",
+          "time": "09:30-10:15",
+          "type": "café",
+          "notes": "Beautiful café with coffee and pastries. Start day lightly before Harajuku.",
+          "status": "spontaneous, no reservation needed"
+        },
+        {
+          "name": "Isetan Shinjuku",
+          "time": "morning/afternoon"
+        },
+        {
+          "name": "UNIQLO Shinjuku Honten",
+          "notes": "Flagship Store"
+        },
+        {
+          "name": "The Giant 3D Cat"
+        },
+        {
+          "name": "Godzilla Road"
+        },
+        {
+          "name": "Nakano Station",
+          "notes": "Head towards restaurant area"
+        },
+        {
+          "name": "Maguro Mart",
+          "time": "21:00",
+          "type": "dining",
+          "notes": "BOOKED - High-end tuna/fish restaurant",
+          "booked": true,
+          "dietary_notes": "Daniel: Send in advance - 'One guest does not eat pork, shrimp, crab, squid, octopus, clams or oysters. Fish is OK. Beef and chicken are OK. Please confirm if this can be accommodated.'"
+        }
+      ],
+      "if_day_too_busy": {
+        "priorities": [
+          "DAWN Avatar Robot Café",
+          "Cafe Capyba (if can book)",
+          "AMAM DACOTAN spontaneous only",
+          "AFURI can shift/skip",
+          "Maguro Mart MUST - already booked"
+        ]
+      },
+      "spontaneous": [
+        "DAWN Avatar Robot Café",
+        "Cafe Capyba",
+        "AFURI"
+      ]
+    },
+    {
+      "date": "2026-09-07",
+      "day": "Sunday",
+      "city": "Tokyo → Kyoto",
+      "hotel": "leaving remm plus Ginza, arriving Cross Hotel Kyoto",
+      "theme": "Travel to Kyoto",
+      "activities": [
+        {
+          "name": "Leave early for Shinagawa",
+          "time": "morning"
+        },
+        {
+          "name": "Shinkansen Shinagawa → Kyoto",
+          "time": "09:17-11:21",
+          "train": "Nozomi 245",
+          "booked": true
+        },
+        {
+          "name": "Arrive Kyoto 11:21"
+        },
+        {
+          "name": "Luggage storage / Check-in"
+        },
+        {
+          "name": "Nishiki Market",
+          "time": "afternoon"
+        },
+        {
+          "name": "Gion / Pontocho / Kamo River",
+          "time": "afternoon/evening"
+        },
+        {
+          "name": "CHAO CHAO GYOZA",
+          "time": "19:30",
+          "type": "dining",
+          "notes": "Gyoza restaurant. Recommended time 19:30. Check if can book, otherwise spontaneous.",
+          "dietary_notes": "Daniel: Gyoza often has pork, check for chicken/beef/vegetable options"
+        }
+      ],
+      "tips": [
+        "If sending luggage Tokyo to Kyoto, much easier",
+        "Bring small bag for Shinkansen",
+        "Keep QR/tickets accessible"
+      ]
+    },
+    {
+      "date": "2026-09-08",
+      "day": "Monday",
+      "city": "Kyoto",
+      "hotel": "Cross Hotel Kyoto",
+      "theme": "East Kyoto + Japanese sweets",
+      "activities": [
+        {
+          "name": "Kiyomizu-dera",
+          "type": "temple"
+        },
+        {
+          "name": "My Only Fragrance KIYOMIZU",
+          "type": "custom_fragrance_shop"
+        },
+        {
+          "name": "Ninenzaka / Sannenzaka",
+          "type": "shopping_street"
+        },
+        {
+          "name": "Nishiki Market",
+          "note": "Can revisit"
+        },
+        {
+          "name": "teamLab Borderless Kyoto",
+          "time": "16:30",
+          "notes": "Optional - recommend booking time in advance. Check if available.",
+          "type": "museum"
+        },
+        {
+          "name": "Rokujuan / Rokujyuan",
+          "time": "15:00-16:00",
+          "type": "dessert_café",
+          "notes": "Transparent mochi with flowers, very photogenic. Priority choice.",
+          "status": "check if reservation needed, otherwise arrive early for queue",
+          "dietary_notes": "Daniel: N/A"
+        },
+        {
+          "name": "Kyoto Ninenzaka Starbucks",
+          "time": "15:30-16:30",
+          "type": "café",
+          "notes": "Backup option - traditional Japanese old house, near Ninenzaka/Sannenzaka. No reservation needed.",
+          "status": "spontaneous"
+        }
+      ],
+      "notes": "Don't do both Rokujuan and Starbucks if tired/short on time. Rokujuan priority if want something special."
+    },
+    {
+      "date": "2026-09-09",
+      "day": "Tuesday",
+      "city": "Kyoto",
+      "hotel": "Cross Hotel Kyoto",
+      "theme": "Fushimi Inari + Special Café + Wagyu Dinner",
+      "note": "Can do early morning to Nara, return to Kyoto for Fushimi Inari afternoon",
+      "activities": [
+        {
+          "name": "Fushimi Inari Taisha",
+          "time": "morning/midday",
+          "notes": "Red gates, arrive relatively early",
+          "type": "temple"
+        },
+        {
+          "name": "Café 33 Hyatt Regency Kyoto",
+          "time": "14:30-15:30",
+          "type": "specialty_café",
+          "notes": "Special cold coffee on ice cube. Recommended time 14:30-15:30.",
+          "status": "spontaneous, must book table",
+          "dietary_notes": "Daniel: N/A"
+        },
+        {
+          "name": "Philosopher's Path (Tetsugaku no Michi)",
+          "notes": "North End"
+        },
+        {
+          "name": "Ginkaku-ji",
+          "type": "temple"
+        },
+        {
+          "name": "Wagyu/Beef Dinner",
+          "time": "19:00-19:30",
+          "type": "dining",
+          "priority_order": [
+            {
+              "rank": 1,
+              "name": "Yakiniku Gosyu",
+              "notes": "Intimate experience, Omi Beef/Kobe Beef, private rooms. Time: 19:00/19:30",
+              "booking": "to_book"
+            },
+            {
+              "rank": 2,
+              "name": "Wagyu Ryotei Bungo Gion",
+              "notes": "Luxury backup - Wagyu/Omakase beef in Gion. ~18,800¥ per person",
+              "booking": "backup"
+            },
+            {
+              "rank": 3,
+              "name": "Yakiniku Marutomi",
+              "notes": "More accessible - good beef without highest luxury",
+              "booking": "backup"
+            },
+            {
+              "rank": 4,
+              "name": "Wagyu Restaurant Kanae Kyoto / Hafuu Kyoto",
+              "notes": "Additional backups",
+              "booking": "backup"
+            }
+          ],
+          "booking_note": "One guest does not eat pork or seafood/shellfish. Beef and chicken are OK. Please let us know if this cannot be accommodated.",
+          "dietary_notes": "Daniel: No pork, no seafood"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-10",
+      "day": "Wednesday",
+      "city": "Kyoto",
+      "hotel": "Cross Hotel Kyoto",
+      "theme": "Arashiyama",
+      "activities": [
+        {
+          "name": "Arashiyama Bamboo Grove",
+          "type": "nature"
+        },
+        {
+          "name": "Tenryu-ji",
+          "type": "temple"
+        },
+        {
+          "name": "Togetsukyo Bridge"
+        },
+        {
+          "name": "Arashiyama Monkey Park Iwatayama",
+          "notes": "Includes uphill walk - wear comfortable shoes. Don't do right before nice restaurant if don't want to arrive sweaty.",
+          "type": "park"
+        },
+        {
+          "name": "Walk around river area"
+        },
+        {
+          "name": "Kinkaku-ji",
+          "notes": "Golden Temple - requires travel"
+        },
+        {
+          "name": "Lunch - Kijurou",
+          "type": "restaurant",
+          "notes": "Near bamboo forest, excellent beef restaurant",
+          "time": "lunch"
+        },
+        {
+          "name": "Udon / Soba",
+          "notes": "Without pork/seafood if can find",
+          "dietary_notes": "Daniel: N/A"
+        },
+        {
+          "name": "Beef/Chicken restaurant",
+          "notes": "Light meal in area"
+        }
+      ],
+      "notes": "Don't do Romantic Train / Hozu Boat right now, only spontaneous if time permits",
+      "tips": [
+        "Monkey park has uphill walk - wear comfortable shoes",
+        "Don't do monkey park right before nice restaurant if want to arrive fresh"
+      ]
+    },
+    {
+      "date": "2026-09-11",
+      "day": "Thursday",
+      "city": "Kyoto → Osaka",
+      "hotel": "leaving Cross Hotel Kyoto, arriving Karaksa Hotel Osaka Namba",
+      "theme": "Travel to Osaka",
+      "activities": [
+        {
+          "name": "Relaxed morning in Kyoto"
+        },
+        {
+          "name": "Travel to Osaka",
+          "notes": "No need to book train in advance"
+        },
+        {
+          "name": "Check-in / luggage storage"
+        },
+        {
+          "name": "Dotonbori",
+          "type": "entertainment_district"
+        },
+        {
+          "name": "Hozenji Yokocho"
+        },
+        {
+          "name": "Shinsaibashi",
+          "type": "shopping"
+        },
+        {
+          "name": "Spontaneous dining",
+          "options": [
+            "Takoyaki",
+            "Okonomiyaki",
+            "Gyukatsu Motomura Namba",
+            "Street food at Dotonbori"
+          ]
+        },
+        {
+          "name": "Osaka Aquarium",
+          "notes": "Recommended - book time in advance if visiting",
+          "optional": true
+        }
+      ],
+      "backup_dinner": {
+        "name": "Dojima Yakiniku / Teppanyaki",
+        "time": "20:00",
+        "notes": "Backup if can't book beef for 12.9",
+        "type": "dining"
+      }
+    },
+    {
+      "date": "2026-09-12",
+      "day": "Friday",
+      "city": "Osaka",
+      "hotel": "Karaksa Hotel Osaka Namba",
+      "theme": "Osaka city + Beef/Teppanyaki dinner",
+      "activities": [
+        {
+          "name": "Kuromon Market",
+          "type": "market"
+        },
+        {
+          "name": "Namba Yasaka Shrine"
+        },
+        {
+          "name": "Den Den Town",
+          "type": "electronics_district"
+        },
+        {
+          "name": "Shinsekai"
+        },
+        {
+          "name": "Dotonbori",
+          "time": "evening",
+          "notes": "If time available"
+        },
+        {
+          "name": "Beef dinner",
+          "time": "19:30",
+          "type": "dining",
+          "priority_order": [
+            {
+              "rank": 1,
+              "name": "Osaka Teppanyaki Kobe Beef Steak Zin Namba",
+              "instagram": "@teppanzin_namba",
+              "time": "19:30",
+              "why": "Teppanyaki, chef in front of you, more experience for honeymoon, close to Namba/Dotonbori",
+              "booking": "to_book"
+            },
+            {
+              "rank": 2,
+              "name": "Dojima Yakiniku Restaurant / Dojima Yakiniku Ryoriten",
+              "time": "19:30",
+              "why": "Good Wagyu/Yakiniku but less experiential, less convenient than Teppanyaki",
+              "booking": "backup"
+            }
+          ],
+          "note": "Don't put on 14.9 (USJ day). Don't put on 13.9 (Umeda Sky evening)."
+        }
+      ]
+    },
+    {
+      "date": "2026-09-13",
+      "day": "Saturday",
+      "city": "Osaka",
+      "hotel": "Karaksa Hotel Osaka Namba",
+      "theme": "Pokémon / Osaka Castle / Umeda Sky",
+      "activities": [
+        {
+          "name": "Pokémon Center Osaka",
+          "type": "shopping"
+        },
+        {
+          "name": "Pokémon Café Osaka",
+          "notes": "If opens/cancellations - keep checking",
+          "status": "currently no availability",
+          "booking": "to_monitor"
+        },
+        {
+          "name": "Osaka Castle",
+          "type": "landmark"
+        },
+        {
+          "name": "Umeda / Shopping"
+        },
+        {
+          "name": "Rikuro Cheesecake"
+        },
+        {
+          "name": "Umeda Sky Building + Heart Padlock",
+          "time": "evening, prefer sunset 18:00-19:00",
+          "notes": "BOOKED - No fixed time, prefer sunset/evening. Heart padlock included.",
+          "booked": true
+        }
+      ],
+      "backup": {
+        "name": "Pokémon Center Osaka + dessert/café in area",
+        "notes": "If Pokémon Café still unavailable"
+      },
+      "umeda_sky_tips": [
+        "Arrive around 18:00-19:00 for sunset/evening lights",
+        "Heart padlock included in package"
+      ]
+    },
+    {
+      "date": "2026-09-14",
+      "day": "Sunday",
+      "city": "Osaka",
+      "hotel": "Karaksa Hotel Osaka Namba",
+      "theme": "Universal Studios Japan",
+      "activities": [
+        {
+          "name": "Universal Studios Japan",
+          "time": "full day",
+          "notes": "BOOKED - Studio Pass + Express Pass 8",
+          "booked": true,
+          "express_sessions": {
+            "super_nintendo_world": "10:30-11:30",
+            "mario_kart": "10:30-11:00",
+            "yoshis_adventure": "11:00-11:30",
+            "mine_cart_madness": "11:30-12:00",
+            "flight_of_hippogriff": "13:00-13:30",
+            "minion_blast": "14:00-14:30"
+          },
+          "choose_one": ["The Flying Dinosaur", "Jurassic Park - The Ride (if open)", "JAWS"],
+          "tips": [
+            "Download USJ app in advance",
+            "Arrive early",
+            "Remember you have both Studio Pass and Express Pass",
+            "Check app for Halloween/Seasonal events",
+            "This is a tiring day - don't plan expensive dinner evening"
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-09-15",
+      "day": "Monday",
+      "city": "Osaka → Tokyo",
+      "hotel": "leaving Karaksa Hotel Osaka Namba, arriving Mitsui Garden Hotel Ginza Tsukiji",
+      "theme": "Return to Tokyo",
+      "activities": [
+        {
+          "name": "Shinkansen Shin-Osaka → Shinagawa",
+          "time": "09:06-11:25",
+          "train": "Nozomi 4",
+          "notes": "BOOKED - Return to Tokyo",
+          "booked": true
+        },
+        {
+          "name": "Arrive Tokyo",
+          "time": "11:25"
+        },
+        {
+          "name": "Check-in / Rest"
+        },
+        {
+          "name": "Evening relatively free",
+          "notes": "If book beef dinner - see below"
+        },
+        {
+          "name": "Beef dinner (optional)",
+          "time": "19:30",
+          "type": "dining",
+          "priority_order": [
+            {
+              "rank": 1,
+              "name": "YORONIKU Tokyo Azabudai Hills",
+              "time": "19:30",
+              "when_to_book": "Check bookings around 15.8 if opens month ahead",
+              "booking": "to_book"
+            },
+            {
+              "rank": 2,
+              "name": "Yakiniku Kappo Ryotei Note",
+              "time": "15.9, 19:30",
+              "booking": "backup"
+            },
+            {
+              "rank": 3,
+              "name": "Han no Daidokoro Bettei Shibuya",
+              "time": "15.9, 19:30",
+              "notes": "Yakiniku/Wagyu Shibuya, private rooms, more comfortable if in Shibuya area",
+              "booking": "backup"
+            }
+          ],
+          "note": "Don't do both beef dinner and Bar Centifolia same evening - if nice beef dinner, keep evening relaxed after"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-16",
+      "day": "Tuesday",
+      "city": "Tokyo",
+      "hotel": "Mitsui Garden Hotel Ginza Tsukiji",
+      "theme": "teamLab + Ginza Kagari + Sumo",
+      "activities": [
+        {
+          "name": "teamLab Planets Tokyo",
+          "time": "11:30-13:00",
+          "notes": "BOOKED - Interactive experience with water, barefoot. Don't wear short skirt/dress, wear comfortable clothes.",
+          "booked": true,
+          "tips": [
+            "No short skirts/dresses (mirror floors)",
+            "Bare feet in water areas",
+            "Don't wear complicated socks"
+          ]
+        },
+        {
+          "name": "Ginza Kagari",
+          "time": "13:30-14:30",
+          "type": "dining",
+          "notes": "Chicken ramen in Ginza. Spontaneous/queue.",
+          "dietary_notes": "Daniel: Confirm no seafood broth/toppings if important",
+          "status": "spontaneous/queue"
+        },
+        {
+          "name": "Mitsukoshi Ginza",
+          "notes": "Floors 2-3 - hidden food market",
+          "type": "shopping"
+        },
+        {
+          "name": "Uniqlo Ginza Flagship Store",
+          "notes": "Visit shopping street with all stores"
+        },
+        {
+          "name": "Rare Tendon Ginza Mitsuyoshi",
+          "time": "lunch alternative",
+          "type": "dining",
+          "notes": "Tendon/tempura Ginza. MUST BOOK IN ADVANCE.",
+          "dietary_notes": "Daniel: Check no shrimp/seafood",
+          "status": "requires advance booking",
+          "use_as": "alternative if queue at Kagari too long or want tendon"
+        },
+        {
+          "name": "Official Sumo",
+          "time": "15:00-18:00",
+          "location": "Ryogoku Kokugikan",
+          "notes": "OPTIONAL - If can get tickets. Book Grand Sumo Tournament for 16.9, backup 17.9. Look for Chair/Arena Seats for 2 people, NOT Box Seats.",
+          "booking": "to_book_if_available",
+          "type": "sporting_event"
+        },
+        {
+          "name": "Imperial Palace (Kōkyo)",
+          "notes": "Alternative in same area if don't go to sumo"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-17",
+      "day": "Wednesday",
+      "city": "Tokyo",
+      "hotel": "Mitsui Garden Hotel Ginza Tsukiji",
+      "theme": "Last full day - Spa / Shopping / Sumo+Dinner / Bar",
+      "activities": [
+        {
+          "name": "Tsukiji Outer Market",
+          "time": "morning",
+          "type": "market",
+          "notes": "Food market. Taste but don't eat while walking - stand aside. No early-morning tuna sales, just outer market."
+        },
+        {
+          "name": "The Head Spa Tokyo",
+          "time": "11:00-12:30",
+          "type": "spa",
+          "notes": "Japanese head treatment, 90 minutes. BOOK IN ADVANCE.",
+          "booking": "to_book",
+          "alternatives": "12:00 / 10:30 / 13:00 / 14:00",
+          "tip": "Not too late - relaxing treatment, prefer to keep evening for dinner/bar",
+          "booked": false
+        },
+        {
+          "name": "Ginza / Shopping Afternoon",
+          "activities": [
+            "Tokyo Station Character Street",
+            "Don Quijote",
+            "Muji / Uniqlo",
+            "Last-minute shopping"
+          ]
+        },
+        {
+          "name": "Last souvenirs",
+          "options": [
+            "Cremia ice cream",
+            "Tokyo Banana",
+            "Butter Butler",
+            "Tokyo Milk Cheese Factory"
+          ]
+        },
+        {
+          "name": "Sushi Kenshin",
+          "time": "19:00",
+          "type": "dining",
+          "notes": "Omakase sushi we discussed. Book around 17.8 if opens month ahead.",
+          "booking": "to_book",
+          "alternatives": "18:30 / 19:30 / 20:00",
+          "dietary_note": "One guest does not eat pork, shrimp, crab, squid, octopus, clams or oysters. Fish is OK. Beef and chicken are OK. Please confirm if this can be accommodated."
+        },
+        {
+          "name": "Bar Centifolia",
+          "time": "21:00-21:30",
+          "type": "cocktail_bar",
+          "notes": "Special cocktail bar with dramatic presentations/smoke/fire. Book in advance if possible via Instagram/website/DM.",
+          "booking": "to_book",
+          "tip": "Right after dinner, not too early."
+        }
+      ],
+      "backup_dinner": {
+        "names": ["YORONIKU", "Note", "Han no Daidokoro"],
+        "notes": "If didn't do on 15.9"
+      }
+    },
+    {
+      "date": "2026-09-18",
+      "day": "Thursday",
+      "city": "Tokyo → Bangkok",
+      "theme": "Departure",
+      "activities": [
+        {
+          "name": "Check-out from hotel"
+        },
+        {
+          "name": "Travel to Narita Airport"
+        },
+        {
+          "name": "Flight Tokyo → Bangkok",
+          "time": "08:55-13:45",
+          "notes": "As provided"
+        }
+      ]
+    }
+  ],
+  "travelers": [
+    {
+      "name": "Traveler 1",
+      "dietary_notes": "No restrictions mentioned"
+    },
+    {
+      "name": "Daniel",
+      "dietary_notes": "No pork, shrimp, crab, squid, octopus, clams or oysters. Fish OK. Beef and chicken OK.",
+      "note": "When booking restaurants: 'One guest does not eat pork, shrimp, crab, squid, octopus, clams or oysters. Fish is OK. Beef and chicken are OK. Please confirm if this can be accommodated.'"
+    }
+  ]
+}

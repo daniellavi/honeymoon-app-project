@@ -1,0 +1,913 @@
+import { useState, useMemo, useEffect, useRef, createContext, useContext } from "react";
+import { Plane, MapPin, Calendar, Wallet, Home, Hotel, Ticket, Plus, X, Heart, Compass, Trash2, Map as MapIcon, Train } from "lucide-react";
+
+/* The Google Maps API key is entered inside the running app (gear icon in
+   the header) rather than hardcoded here, so no code editing is needed. */
+const ApiKeyContext = createContext({ apiKey: "", setApiKey: () => {} });
+const useApiKey = () => useContext(ApiKeyContext);
+
+const C = {
+  bg: "#161B33",
+  bgAlt: "#1F2547",
+  bgCard: "#242C52",
+  bgCardHi: "#2C3462",
+  gold: "#C9A44C",
+  goldLight: "#E8CD8A",
+  blush: "#E3A9A0",
+  parchment: "#F3ECDD",
+  text: "#F3ECDD",
+  textMuted: "#9CA3C4",
+  over: "#C1613F",
+  under: "#7FAE8E",
+  border: "rgba(201,164,76,0.28)",
+};
+
+const FONTS = `
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+.pac-container { background:${C.bgCardHi}; border:1px solid ${C.border}; border-radius:12px; overflow:hidden; font-family:'Rubik',sans-serif; margin-top:4px; }
+.pac-item { color:${C.text}; border-color:${C.border}; padding:8px 12px; font-size:13px; }
+.pac-item:hover { background:${C.bgAlt}; }
+.pac-item-query { color:${C.parchment}; }
+.pac-matched { color:${C.goldLight}; }
+.pac-icon { display:none; }
+`;
+
+const display = { fontFamily: "'Rubik', sans-serif", fontWeight: 600 };
+const body = { fontFamily: "'Rubik', sans-serif" };
+const mono = { fontFamily: "'IBM Plex Mono', monospace" };
+const ltr = { direction: "ltr", unicodeBidi: "isolate" };
+
+let uid = 100;
+const newId = () => `id-${uid++}`;
+
+const CATEGORY_SEED = ["טיסות", "מלונות", "אוכל ומסעדות", "פעילויות וסיורים", "קניות", "אחר"];
+
+/* Built-in destination list — fallback source for suggestions and map
+   placement when no Google Maps API key is present. */
+const DESTINATIONS = [
+  { name: "פריז", en: "paris", country: "צרפת", lat: 48.8566, lng: 2.3522 },
+  { name: "ניס", en: "nice", country: "צרפת", lat: 43.7102, lng: 7.2620 },
+  { name: "רומא", en: "rome", country: "איטליה", lat: 41.9028, lng: 12.4964 },
+  { name: "פירנצה", en: "florence", country: "איטליה", lat: 43.7696, lng: 11.2558 },
+  { name: "ונציה", en: "venice", country: "איטליה", lat: 45.4408, lng: 12.3155 },
+  { name: "מילאנו", en: "milan", country: "איטליה", lat: 45.4642, lng: 9.1900 },
+  { name: "פוסיטאנו", en: "positano", country: "איטליה", lat: 40.6280, lng: 14.4849 },
+  { name: "אמלפי", en: "amalfi", country: "איטליה", lat: 40.6340, lng: 14.6027 },
+  { name: "קאפרי", en: "capri", country: "איטליה", lat: 40.5532, lng: 14.2429 },
+  { name: "ברצלונה", en: "barcelona", country: "ספרד", lat: 41.3851, lng: 2.1734 },
+  { name: "מדריד", en: "madrid", country: "ספרד", lat: 40.4168, lng: -3.7038 },
+  { name: "סביליה", en: "seville", country: "ספרד", lat: 37.3891, lng: -5.9845 },
+  { name: "ליסבון", en: "lisbon", country: "פורטוגל", lat: 38.7223, lng: -9.1393 },
+  { name: "פורטו", en: "porto", country: "פורטוגל", lat: 41.1579, lng: -8.6291 },
+  { name: "אמסטרדם", en: "amsterdam", country: "הולנד", lat: 52.3676, lng: 4.9041 },
+  { name: "לונדון", en: "london", country: "אנגליה", lat: 51.5072, lng: -0.1276 },
+  { name: "פראג", en: "prague", country: "צ'כיה", lat: 50.0755, lng: 14.4378 },
+  { name: "וינה", en: "vienna", country: "אוסטריה", lat: 48.2082, lng: 16.3738 },
+  { name: "בודפשט", en: "budapest", country: "הונגריה", lat: 47.4979, lng: 19.0402 },
+  { name: "ברלין", en: "berlin", country: "גרמניה", lat: 52.5200, lng: 13.4050 },
+  { name: "סנטוריני", en: "santorini", country: "יוון", lat: 36.3932, lng: 25.4615 },
+  { name: "מיקונוס", en: "mykonos", country: "יוון", lat: 37.4467, lng: 25.3289 },
+  { name: "אתונה", en: "athens", country: "יוון", lat: 37.9838, lng: 23.7275 },
+  { name: "קרפתוס", en: "karpathos", country: "יוון", lat: 35.5077, lng: 27.2149 },
+  { name: "דוברובניק", en: "dubrovnik", country: "קרואטיה", lat: 42.6507, lng: 18.0944 },
+  { name: "רייקיאוויק", en: "reykjavik", country: "איסלנד", lat: 64.1466, lng: -21.9426 },
+  { name: "איסטנבול", en: "istanbul", country: "טורקיה", lat: 41.0082, lng: 28.9784 },
+  { name: "קפדוקיה", en: "cappadocia", country: "טורקיה", lat: 38.6431, lng: 34.8289 },
+  { name: "מלטה", en: "malta", country: "מלטה", lat: 35.9375, lng: 14.3754 },
+  { name: "לרנקה", en: "larnaca", country: "קפריסין", lat: 34.9229, lng: 33.6233 },
+  { name: "באלי", en: "bali", country: "אינדונזיה", lat: -8.3405, lng: 115.0920 },
+  { name: "המלדיביים", en: "maldives", country: "המלדיביים", lat: 3.2028, lng: 73.2207 },
+  { name: "פוקט", en: "phuket", country: "תאילנד", lat: 7.8804, lng: 98.3923 },
+  { name: "בנגקוק", en: "bangkok", country: "תאילנד", lat: 13.7563, lng: 100.5018 },
+  { name: "קו סמוי", en: "koh samui", country: "תאילנד", lat: 9.5120, lng: 100.0136 },
+  { name: "טוקיו", en: "tokyo", country: "יפן", lat: 35.6762, lng: 139.6503 },
+  { name: "קיוטו", en: "kyoto", country: "יפן", lat: 35.0116, lng: 135.7681 },
+  { name: "האנוי", en: "hanoi", country: "וייטנאם", lat: 21.0278, lng: 105.8342 },
+  { name: "הו צ'י מין", en: "ho chi minh", country: "וייטנאם", lat: 10.8231, lng: 106.6297 },
+  { name: "סינגפור", en: "singapore", country: "סינגפור", lat: 1.3521, lng: 103.8198 },
+  { name: "קולומבו", en: "colombo", country: "סרי לנקה", lat: 6.9271, lng: 79.8612 },
+  { name: "איי סיישל", en: "seychelles", country: "סיישל", lat: -4.6796, lng: 55.4920 },
+  { name: "מאוריציוס", en: "mauritius", country: "מאוריציוס", lat: -20.3484, lng: 57.5522 },
+  { name: "זנזיבר", en: "zanzibar", country: "טנזניה", lat: -6.1659, lng: 39.2026 },
+  { name: "קייפטאון", en: "cape town", country: "דרום אפריקה", lat: -33.9249, lng: 18.4241 },
+  { name: "מרקש", en: "marrakech", country: "מרוקו", lat: 31.6295, lng: -7.9811 },
+  { name: "קהיר", en: "cairo", country: "מצרים", lat: 30.0444, lng: 31.2357 },
+  { name: "פטרה", en: "petra", country: "ירדן", lat: 30.3285, lng: 35.4444 },
+  { name: "דובאי", en: "dubai", country: "איחוד האמירויות", lat: 25.2048, lng: 55.2708 },
+  { name: "ניו יורק", en: "new york", country: "ארה\"ב", lat: 40.7128, lng: -74.0060 },
+  { name: "לוס אנג'לס", en: "los angeles", country: "ארה\"ב", lat: 34.0522, lng: -118.2437 },
+  { name: "לאס וגאס", en: "las vegas", country: "ארה\"ב", lat: 36.1699, lng: -115.1398 },
+  { name: "הוואי", en: "hawaii", country: "ארה\"ב", lat: 20.7967, lng: -156.3319 },
+  { name: "מאווי", en: "maui", country: "ארה\"ב", lat: 20.7984, lng: -156.3319 },
+  { name: "טולום", en: "tulum", country: "מקסיקו", lat: 20.2114, lng: -87.4654 },
+  { name: "קנקון", en: "cancun", country: "מקסיקו", lat: 21.1619, lng: -86.8515 },
+  { name: "קוסטה ריקה", en: "costa rica", country: "קוסטה ריקה", lat: 9.7489, lng: -83.7534 },
+  { name: "סנט לוסיה", en: "saint lucia", country: "סנט לוסיה", lat: 13.9094, lng: -60.9789 },
+  { name: "בורה בורה", en: "bora bora", country: "פולינזיה הצרפתית", lat: -16.5004, lng: -151.7415 },
+  { name: "פיג'י", en: "fiji", country: "פיג'י", lat: -17.7134, lng: 178.0650 },
+  { name: "בואנוס איירס", en: "buenos aires", country: "ארגנטינה", lat: -34.6037, lng: -58.3816 },
+  { name: "ריו דה ז'ניירו", en: "rio de janeiro", country: "ברזיל", lat: -22.9068, lng: -43.1729 },
+  { name: "תל אביב", en: "tel aviv", country: "ישראל", lat: 32.0853, lng: 34.7818 },
+];
+
+const DESTINATION_NAMES = DESTINATIONS.map((d) => d.name);
+const COUNTRY_NAMES = [...new Set(DESTINATIONS.map((d) => d.country))];
+
+function geocode(name, country) {
+  const norm = (s) => (s || "").trim().toLowerCase();
+  const n = norm(name);
+  const c = norm(country);
+  let hit = DESTINATIONS.find((d) => d.name === (name || "").trim() || norm(d.en) === n);
+  if (!hit && n) hit = DESTINATIONS.find((d) => d.name.includes((name || "").trim()) || norm(d.en).includes(n));
+  if (!hit && c) hit = DESTINATIONS.find((d) => d.country === (country || "").trim() || norm(d.country).includes(c));
+  return hit ? [hit.lat, hit.lng] : null;
+}
+
+function fmtDate(d) {
+  if (!d) return "";
+  const dt = new Date(d + "T00:00:00");
+  if (isNaN(dt)) return d;
+  return dt.toLocaleDateString("he-IL", { day: "numeric", month: "short" });
+}
+
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const target = new Date(dateStr + "T00:00:00");
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return Math.ceil((target - now) / 86400000);
+}
+
+/* ---------- Google Maps loader (shared across the whole app) ---------- */
+
+let mapsLoadPromise = null;
+let loadedForKey = null;
+function loadGoogleMaps(apiKey) {
+  if (!apiKey) return Promise.reject(new Error("no-key"));
+  if (window.google?.maps?.places && loadedForKey === apiKey) return Promise.resolve(window.google);
+  if (mapsLoadPromise && loadedForKey === apiKey) return mapsLoadPromise;
+  loadedForKey = apiKey;
+  mapsLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=he&region=IL`;
+    script.async = true;
+    script.onload = () => resolve(window.google);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  return mapsLoadPromise;
+}
+
+function useGoogleMaps() {
+  const { apiKey } = useApiKey();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (!apiKey) { setReady(false); return; }
+    let cancelled = false;
+    loadGoogleMaps(apiKey).then(() => { if (!cancelled) setReady(true); }).catch(() => { if (!cancelled) setReady(false); });
+    return () => { cancelled = true; };
+  }, [apiKey]);
+  return ready;
+}
+
+function extractCountry(place) {
+  const comp = place.address_components?.find((c) => c.types.includes("country"));
+  return comp?.long_name || "";
+}
+
+/* ---------- Stable, module-level components ---------- */
+
+const StampBadge = ({ stop, index, onClick, small }) => {
+  const rotations = [-6, 4, -3, 5, -5, 3];
+  const rot = rotations[index % rotations.length];
+  const size = small ? 62 : 92;
+  return (
+    <button
+      onClick={onClick}
+      style={{ transform: `rotate(${rot}deg)`, border: `2px dashed ${C.border}`, background: C.bgCard, color: C.textMuted, minWidth: size, height: size }}
+      className="rounded-full flex flex-col items-center justify-center px-2 shrink-0 transition-colors"
+    >
+      <Compass size={small ? 12 : 16} style={{ marginBottom: 4, opacity: 0.8 }} />
+      <span style={{ ...display, fontSize: small ? 9 : 11, letterSpacing: "0.02em", textAlign: "center", lineHeight: 1.15 }}>
+        {stop.name || "יעד חדש"}
+      </span>
+    </button>
+  );
+};
+
+const Section = ({ title, icon: Icon, children, action }) => (
+  <div style={{ background: C.bgCard, border: `1px solid ${C.border}` }} className="rounded-2xl p-4 mb-4">
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <Icon size={16} color={C.gold} />
+        <span style={{ ...display, color: C.parchment, fontSize: 15 }}>{title}</span>
+      </div>
+      {action}
+    </div>
+    {children}
+  </div>
+);
+
+const SmallInput = (props) => (
+  <input
+    {...props}
+    style={{ ...body, background: C.bgAlt, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, ...props.style }}
+    className={`rounded-lg px-3 py-2 outline-none placeholder:opacity-50 w-full ${props.className || ""}`}
+  />
+);
+
+/* Autocomplete input: uses real Google Places when a key is loaded,
+   otherwise falls back to the local destination list. */
+const AutocompleteInput = ({ value, onChange, onPlaceSelected, options, placeholder, style, placeType }) => {
+  const mapsReady = useGoogleMaps();
+  const inputRef = useRef(null);
+  const acRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mapsReady || !inputRef.current || acRef.current || !window.google?.maps?.places) return;
+    const opts = { fields: ["name", "formatted_address", "geometry", "address_components"] };
+    if (placeType) opts.types = [placeType];
+    const ac = new window.google.maps.places.Autocomplete(inputRef.current, opts);
+    ac.addListener("place_changed", () => {
+      const place = ac.getPlace();
+      if (!place || (!place.name && !place.formatted_address)) return;
+      const label = place.name || place.formatted_address || "";
+      onChange(label);
+      if (onPlaceSelected) {
+        onPlaceSelected({
+          label,
+          address: place.formatted_address,
+          country: extractCountry(place),
+          lat: place.geometry?.location?.lat(),
+          lng: place.geometry?.location?.lng(),
+        });
+      }
+    });
+    acRef.current = ac;
+  }, [mapsReady, placeType]);
+
+  const q = (value || "").trim();
+  const filtered = !mapsReady && options ? (q ? options.filter((o) => o.includes(q)) : options).slice(0, 6) : [];
+
+  return (
+    <div className="relative w-full">
+      <input
+        ref={inputRef}
+        value={value}
+        placeholder={placeholder}
+        style={{ ...body, background: C.bgAlt, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, ...style }}
+        className="rounded-lg px-3 py-2 outline-none placeholder:opacity-50 w-full"
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+      />
+      {!mapsReady && open && filtered.length > 0 && (
+        <div
+          style={{ background: C.bgCardHi, border: `1px solid ${C.border}`, top: "100%", insetInlineStart: 0, insetInlineEnd: 0, marginTop: 4, zIndex: 30 }}
+          className="absolute rounded-lg overflow-hidden max-h-48 overflow-y-auto shadow-lg"
+        >
+          {filtered.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onChange(opt); setOpen(false); }}
+              style={{ ...body, display: "block", width: "100%", textAlign: "right", padding: "8px 12px", fontSize: 13, color: C.text }}
+              className="hover:opacity-70"
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const IconBtn = ({ onClick, children, danger }) => (
+  <button
+    onClick={onClick}
+    style={{ color: danger ? C.over : C.gold, border: `1px solid ${danger ? C.over : C.border}`, background: "transparent" }}
+    className="rounded-lg p-1.5 flex items-center justify-center hover:opacity-80 transition-opacity"
+  >
+    {children}
+  </button>
+);
+
+const BookingList = ({ kind, icon, title, placeholder, items, addingKind, setAddingKind, form, setForm, onSubmit, onRemoveItem }) => {
+  const placeType = kind === "hotels" ? "lodging" : kind === "activities" ? "establishment" : undefined;
+
+  return (
+    <Section
+      title={title}
+      icon={icon}
+      action={<IconBtn onClick={() => setAddingKind(addingKind === kind ? null : kind)}><Plus size={14} /></IconBtn>}
+    >
+      {addingKind === kind && (
+        <div style={{ background: C.bgAlt, border: `1px solid ${C.border}` }} className="rounded-xl p-3 mb-3 flex flex-col gap-2">
+          {kind === "flights" ? (
+            <div className="flex gap-2">
+              <AutocompleteInput placeholder="מוצא (למשל: תל אביב)" value={form.origin} onChange={(v) => setForm((f) => ({ ...f, origin: v }))} options={DESTINATION_NAMES} placeType="(cities)" />
+              <AutocompleteInput placeholder="יעד (למשל: פריז)" value={form.destination} onChange={(v) => setForm((f) => ({ ...f, destination: v }))} options={DESTINATION_NAMES} placeType="(cities)" />
+            </div>
+          ) : (
+            <AutocompleteInput
+              placeholder={placeholder}
+              value={form.label}
+              onChange={(v) => setForm((f) => ({ ...f, label: v }))}
+              onPlaceSelected={(p) => setForm((f) => ({ ...f, label: p.label, detail: f.detail || p.address || "" }))}
+              options={[]}
+              placeType={placeType}
+            />
+          )}
+          <SmallInput placeholder="פרטים (כתובת, שעה, הערות)" value={form.detail} onChange={(e) => setForm((f) => ({ ...f, detail: e.target.value }))} />
+          <div className="flex gap-2">
+            <SmallInput placeholder="מספר אישור" value={form.confirmation} onChange={(e) => setForm((f) => ({ ...f, confirmation: e.target.value }))} style={{ ...mono, ...ltr }} />
+            <SmallInput type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
+          </div>
+          <div className="flex gap-2 justify-end mt-1">
+            <button onClick={() => setAddingKind(null)} style={{ color: C.textMuted, fontSize: 12 }}>ביטול</button>
+            <button onClick={() => onSubmit(kind)} style={{ color: C.gold, fontSize: 12, fontWeight: 600 }}>שמור</button>
+          </div>
+        </div>
+      )}
+      {items.length === 0 && addingKind !== kind && <div style={{ color: C.textMuted, fontSize: 12 }}>עדיין לא נשמר כלום.</div>}
+      <div className="flex flex-col gap-2">
+        {items.map((item) => (
+          <div key={item.id} style={{ background: C.bgAlt, border: `1px solid ${C.border}` }} className="rounded-xl p-3 flex items-start justify-between">
+            <div>
+              <div style={{ color: C.parchment, fontSize: 13, fontWeight: 500 }}>
+                {kind === "flights" ? `${item.origin || "?"} ← ${item.destination || "?"}` : item.label}
+              </div>
+              {item.detail && <div style={{ color: C.textMuted, fontSize: 12 }}>{item.detail}</div>}
+              <div className="flex gap-3 mt-1">
+                {item.date && <span style={{ ...mono, ...ltr, color: C.gold, fontSize: 11 }}>{fmtDate(item.date)}</span>}
+                {item.confirmation && <span style={{ ...mono, ...ltr, color: C.textMuted, fontSize: 11 }}>#{item.confirmation}</span>}
+              </div>
+            </div>
+            <button onClick={() => onRemoveItem(kind, item.id)} style={{ color: C.textMuted }}><X size={14} /></button>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+};
+
+const StopDetail = ({ stop, onBack, onUpdate, onAddItem, onRemoveItem, onDelete }) => {
+  const [addingKind, setAddingKind] = useState(null);
+  const emptyForm = { label: "", origin: "", destination: "", detail: "", confirmation: "", date: "" };
+  const [form, setForm] = useState(emptyForm);
+
+  const submit = (kind) => {
+    if (kind === "flights" ? !form.origin || !form.destination : !form.label) return;
+    onAddItem(kind, { ...form });
+    setForm(emptyForm);
+    setAddingKind(null);
+  };
+
+  return (
+    <div>
+      <button onClick={onBack} style={{ color: C.gold, fontSize: 12 }} className="mb-3 flex items-center gap-1">← חזרה למסלול</button>
+
+      <div style={{ background: C.bgCard, border: `1px solid ${C.border}` }} className="rounded-2xl p-4 mb-4">
+        <div className="flex gap-2 mb-2">
+          <AutocompleteInput
+            placeholder="שם היעד" value={stop.name} onChange={(v) => onUpdate({ name: v })}
+            onPlaceSelected={(p) => onUpdate({ name: p.label, lat: p.lat, lng: p.lng, country: p.country || stop.country })}
+            options={DESTINATION_NAMES} placeType="(cities)" style={{ ...display, fontSize: 15 }}
+          />
+          <AutocompleteInput
+            placeholder="מדינה" value={stop.country} onChange={(v) => onUpdate({ country: v })}
+            options={COUNTRY_NAMES} placeType="(regions)"
+          />
+        </div>
+        <div className="flex gap-2">
+          <SmallInput type="date" value={stop.start} onChange={(e) => onUpdate({ start: e.target.value })} />
+          <SmallInput type="date" value={stop.end} onChange={(e) => onUpdate({ end: e.target.value })} />
+        </div>
+      </div>
+
+      <BookingList kind="flights" icon={Plane} title="טיסות" placeholder="לדוגמה: תל אביב ← פריז"
+        items={stop.flights} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} onSubmit={submit} onRemoveItem={onRemoveItem} />
+      <BookingList kind="hotels" icon={Hotel} title="מלונות" placeholder="חפשו מלון…"
+        items={stop.hotels} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} onSubmit={submit} onRemoveItem={onRemoveItem} />
+      <BookingList kind="activities" icon={Ticket} title="פעילויות וסיורים" placeholder="חפשו אטרקציה או פעילות…"
+        items={stop.activities} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} onSubmit={submit} onRemoveItem={onRemoveItem} />
+      <BookingList kind="transfers" icon={Train} title="הסעות ותחבורה" placeholder="למשל: רכבת, חציית ferry, אוטובוס…"
+        items={stop.transfers} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} onSubmit={submit} onRemoveItem={onRemoveItem} />
+
+      <Section title="הערות ומקומות" icon={MapPin}>
+        <textarea
+          value={stop.notes}
+          onChange={(e) => onUpdate({ notes: e.target.value })}
+          placeholder="מסעדות לנסות, נקודות תצפית, דברים שלא תרצו לפספס…"
+          style={{ ...body, background: C.bgAlt, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, minHeight: 80 }}
+          className="rounded-lg px-3 py-2 outline-none w-full resize-none"
+        />
+      </Section>
+
+      <button onClick={onDelete} style={{ color: C.over, fontSize: 12 }} className="flex items-center gap-1 mt-1">
+        <Trash2 size={13} /> הסירו יעד זה
+      </button>
+    </div>
+  );
+};
+
+/* ---------- Map: real Google Map when a key is present, stylized fallback otherwise ---------- */
+
+const MAP_DARK_STYLE = [
+  { elementType: "geometry", stylers: [{ color: "#1F2547" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#9CA3C4" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#161B33" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#2C3462" }] },
+  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#1B2140" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#242C52" }] },
+  { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#12162B" }] },
+];
+
+const GoogleMapView = ({ stops, onSelect }) => {
+  const mapsReady = useGoogleMaps();
+  const divRef = useRef(null);
+  const mapObjRef = useRef(null);
+  const markersRef = useRef([]);
+  const polylineRef = useRef(null);
+
+  const points = stops
+    .map((s) => {
+      const pos = s.lat != null && s.lng != null && s.lat !== "" && s.lng !== "" ? { lat: Number(s.lat), lng: Number(s.lng) } : (() => { const g = geocode(s.name, s.country); return g ? { lat: g[0], lng: g[1] } : null; })();
+      return pos ? { stop: s, pos } : null;
+    })
+    .filter(Boolean);
+
+  const pointsKey = points.map((p) => `${p.stop.id}:${p.pos.lat},${p.pos.lng}`).join("|");
+
+  useEffect(() => {
+    if (!mapsReady || !divRef.current) return;
+    const google = window.google;
+    if (!mapObjRef.current) {
+      mapObjRef.current = new google.maps.Map(divRef.current, {
+        zoom: 2, center: { lat: 20, lng: 10 }, disableDefaultUI: true, zoomControl: true, styles: MAP_DARK_STYLE,
+      });
+    }
+    const map = mapObjRef.current;
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+    if (polylineRef.current) polylineRef.current.setMap(null);
+
+    if (points.length) {
+      const bounds = new google.maps.LatLngBounds();
+      points.forEach(({ stop, pos }, i) => {
+        const marker = new google.maps.Marker({
+          position: pos, map, title: stop.name,
+          label: { text: String(i + 1), color: "#161B33", fontWeight: "700" },
+        });
+        marker.addListener("click", () => onSelect(stop.id));
+        markersRef.current.push(marker);
+        bounds.extend(pos);
+      });
+      polylineRef.current = new google.maps.Polyline({
+        path: points.map((p) => p.pos), strokeColor: "#C9A44C", strokeOpacity: 0.7, strokeWeight: 2,
+        icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 3 }, offset: "0", repeat: "12px" }],
+        map,
+      });
+      if (points.length === 1) { map.setCenter(points[0].pos); map.setZoom(9); }
+      else map.fitBounds(bounds, 40);
+    }
+  }, [mapsReady, pointsKey]);
+
+  return <div ref={divRef} style={{ width: "100%", height: "100%" }} />;
+};
+
+const StylizedMapView = ({ stops, onSelect }) => {
+  const toXY = (lat, lng) => ({ x: ((Number(lng) + 180) / 360) * 100, y: ((90 - Number(lat)) / 180) * 100 });
+  const withCoords = stops.map((s) => {
+    const c = s.lat != null && s.lat !== "" && s.lng != null && s.lng !== "" ? [Number(s.lat), Number(s.lng)] : geocode(s.name, s.country);
+    return c ? { ...s, ...toXY(c[0], c[1]) } : null;
+  });
+  const points = stops.map((s, i) => withCoords[i]).filter(Boolean);
+  const unplaced = stops.filter((_, i) => !withCoords[i]);
+  const pathD = points.length > 1 ? points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${(p.y * 75) / 100}`).join(" ") : "";
+
+  return (
+    <>
+      <div style={{ background: `linear-gradient(180deg, ${C.bgCard}, ${C.bgAlt})`, border: `1px solid ${C.border}`, position: "relative", aspectRatio: "4 / 3" }} className="rounded-2xl overflow-hidden mb-4">
+        <svg viewBox="0 0 100 75" preserveAspectRatio="none" style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}>
+          {Array.from({ length: 7 }).map((_, i) => <line key={`v${i}`} x1={(i * 100) / 6} y1={0} x2={(i * 100) / 6} y2={75} stroke={C.border} strokeWidth="0.2" />)}
+          {Array.from({ length: 5 }).map((_, i) => <line key={`h${i}`} x1={0} y1={(i * 75) / 4} x2={100} y2={(i * 75) / 4} stroke={C.border} strokeWidth="0.2" />)}
+          {pathD && <path d={pathD} fill="none" stroke={C.gold} strokeWidth="0.4" strokeDasharray="1.2,1.2" opacity="0.8" />}
+        </svg>
+        {points.map((p, i) => (
+          <button key={p.id} onClick={() => onSelect(p.id)} style={{ position: "absolute", left: `${p.x}%`, top: `${p.y}%`, transform: "translate(-50%, -50%)" }}>
+            <StampBadge stop={p} index={i} onClick={() => onSelect(p.id)} small />
+          </button>
+        ))}
+        {points.length === 0 && (
+          <div style={{ position: "absolute", inset: 0 }} className="flex items-center justify-center">
+            <span style={{ color: C.textMuted, fontSize: 13 }} className="text-center px-6">הוסיפו יעדים כדי לראות אותם כאן</span>
+          </div>
+        )}
+      </div>
+      {unplaced.length > 0 && (
+        <Section title="יעדים שלא זוהו על המפה" icon={MapPin}>
+          <div className="flex flex-col gap-2">
+            {unplaced.map((s) => (
+              <button key={s.id} onClick={() => onSelect(s.id)} className="flex items-center justify-between">
+                <span style={{ color: C.parchment, fontSize: 13 }}>{s.name}</span>
+                <span style={{ color: C.textMuted, fontSize: 11 }}>נסו לדייק את השם או המדינה ←</span>
+              </button>
+            ))}
+          </div>
+        </Section>
+      )}
+    </>
+  );
+};
+
+const MapView = ({ stops, onSelect }) => {
+  const { apiKey } = useApiKey();
+  const mapsReady = useGoogleMaps();
+  return (
+    <div>
+      <div style={{ ...display, color: C.parchment, fontSize: 18 }} className="mb-3">מפת המסלול</div>
+      {!apiKey && (
+        <div
+          style={{ color: C.textMuted, fontSize: 11, border: `1px dashed ${C.border}`, width: "100%", textAlign: "right" }}
+          className="rounded-lg px-3 py-2 mb-3"
+        >
+          מציגים מפה מעוצבת. הוסיפו <span style={mono}>GOOGLE_MAPS_API_KEY</span> לקובץ .env לאפשר מפה אמיתית.
+        </div>
+      )}
+      {apiKey && mapsReady ? (
+        <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, aspectRatio: "4 / 3" }} className="rounded-2xl overflow-hidden mb-4">
+          <GoogleMapView stops={stops} onSelect={onSelect} />
+        </div>
+      ) : (
+        <StylizedMapView stops={stops} onSelect={onSelect} />
+      )}
+    </div>
+  );
+};
+
+/* ---------------------------- Main App ---------------------------- */
+
+export default function App() {
+  const [view, setView] = useState("home");
+  const [selectedStopId, setSelectedStopId] = useState(null);
+  const [tripId, setTripId] = useState(null);
+  const [tripName, setTripName] = useState("ירח הדבש שלנו");
+  const [apiKey, setApiKey] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const [stops, setStops] = useState([]);
+  const [budgetTotal, setBudgetTotal] = useState(30000);
+  const [categories, setCategories] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [addingExpense, setAddingExpense] = useState(false);
+  const [newExpense, setNewExpense] = useState({ desc: "", amount: "", categoryId: "", stopId: "" });
+
+  // Load trip data and API key from server on mount
+  useEffect(() => {
+    const loadTrip = async () => {
+      try {
+        // Load Google Maps API key
+        const keyRes = await fetch('http://localhost:3001/api/config/google-maps-key');
+        if (keyRes.ok) {
+          const keyData = await keyRes.json();
+          if (keyData.apiKey) {
+            setApiKey(keyData.apiKey);
+          }
+        }
+
+        const res = await fetch('http://localhost:3001/api/trips/default');
+        if (!res.ok) throw new Error('Failed to load trip');
+        const trip = await res.json();
+
+        setTripId(trip.id);
+        setTripName(trip.name);
+        setBudgetTotal(trip.budgetTotal || 30000);
+
+        // Fetch full trip data
+        const tripRes = await fetch(`http://localhost:3001/api/trips/${trip.id}`);
+        if (!tripRes.ok) throw new Error('Failed to load trip data');
+        const tripData = await tripRes.json();
+
+        setStops(tripData.stops || []);
+        setCategories(tripData.categories.length > 0 ? tripData.categories : CATEGORY_SEED.map((name) => ({ id: newId(), name })));
+        setExpenses(tripData.expenses || []);
+
+        // Initialize categories if they don't exist
+        if (tripData.categories.length === 0) {
+          CATEGORY_SEED.forEach((name) => {
+            const catId = newId();
+            fetch('http://localhost:3001/api/categories', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: catId, tripId: trip.id, name }),
+            }).catch(err => console.error('Failed to create category:', err));
+          });
+        }
+      } catch (err) {
+        console.error('Error loading trip:', err);
+        // Fallback to local data if server is unavailable
+        setTripId('local-' + Date.now());
+        setStops([
+          { id: "s1", name: "יעד 1", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
+          { id: "s2", name: "יעד 2", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
+          { id: "s3", name: "יעד 3", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
+          { id: "s4", name: "יעד 4", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
+        ]);
+        setCategories(CATEGORY_SEED.map((name) => ({ id: newId(), name })));
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadTrip();
+  }, []);
+
+  // Save trip name and budget total when they change
+  useEffect(() => {
+    if (!tripId || tripId.startsWith('local-')) return;
+    const timer = setTimeout(() => {
+      fetch(`http://localhost:3001/api/trips/${tripId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: tripName, budgetTotal }),
+      }).catch(err => console.error('Failed to update trip:', err));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [tripName, budgetTotal, tripId]);
+
+  const selectedStop = stops.find((s) => s.id === selectedStopId);
+
+  const totalSpent = useMemo(() => expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0), [expenses]);
+  const spentByCategory = useMemo(() => {
+    const map = {};
+    expenses.forEach((e) => { map[e.categoryId] = (map[e.categoryId] || 0) + Number(e.amount || 0); });
+    return map;
+  }, [expenses]);
+
+  const nextBooking = useMemo(() => {
+    const all = [];
+    stops.forEach((s) => {
+      s.flights.forEach((f) => all.push({ ...f, type: "טיסה", stopName: s.name }));
+      s.hotels.forEach((h) => all.push({ ...h, type: "מלון", stopName: s.name }));
+      s.activities.forEach((a) => all.push({ ...a, type: "פעילות", stopName: s.name }));
+      s.transfers.forEach((t) => all.push({ ...t, type: "הסעה", stopName: s.name }));
+    });
+    return all[0] || null;
+  }, [stops]);
+
+  const firstStopDate = stops.find((s) => s.start)?.start;
+  const countdown = daysUntil(firstStopDate);
+
+  const updateStop = (id, patch) => {
+    setStops((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+    const stop = stops.find(s => s.id === id);
+    if (stop && tripId) {
+      fetch(`http://localhost:3001/api/stops/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...stop, ...patch }),
+      }).catch(err => console.error('Failed to update stop:', err));
+    }
+  };
+
+  const addStop = () => {
+    const id = newId();
+    const newStop = { id, tripId, name: "יעד חדש", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" };
+    setStops((prev) => [...prev, newStop]);
+    if (tripId) {
+      fetch('http://localhost:3001/api/stops', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newStop),
+      }).catch(err => console.error('Failed to create stop:', err));
+    }
+    setSelectedStopId(id);
+    setView("stop");
+  };
+
+  const removeStop = (id) => {
+    setStops((prev) => prev.filter((s) => s.id !== id));
+    if (tripId) {
+      fetch(`http://localhost:3001/api/stops/${id}`, {
+        method: 'DELETE',
+      }).catch(err => console.error('Failed to delete stop:', err));
+    }
+    if (selectedStopId === id) { setSelectedStopId(null); setView("trip"); }
+  };
+
+  const addBookingItem = (stopId, kind, item) => {
+    const bookingId = newId();
+    setStops((prev) => prev.map((s) => (s.id === stopId ? { ...s, [kind]: [...s[kind], { id: bookingId, ...item }] } : s)));
+    if (tripId) {
+      fetch('http://localhost:3001/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: bookingId, stopId, kind, ...item }),
+      }).catch(err => console.error('Failed to create booking:', err));
+    }
+  };
+
+  const removeBookingItem = (stopId, kind, itemId) => {
+    setStops((prev) => prev.map((s) => (s.id === stopId ? { ...s, [kind]: s[kind].filter((i) => i.id !== itemId) } : s)));
+    if (tripId) {
+      fetch(`http://localhost:3001/api/bookings/${itemId}`, {
+        method: 'DELETE',
+      }).catch(err => console.error('Failed to delete booking:', err));
+    }
+  };
+
+  const submitExpense = () => {
+    if (!newExpense.desc || !newExpense.amount) return;
+    const expenseId = newId();
+    setExpenses((prev) => [...prev, { id: expenseId, ...newExpense }]);
+    if (tripId) {
+      fetch('http://localhost:3001/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: expenseId, tripId, ...newExpense }),
+      }).catch(err => console.error('Failed to create expense:', err));
+    }
+    setNewExpense({ desc: "", amount: "", categoryId: categories[0]?.id, stopId: "" });
+    setAddingExpense(false);
+  };
+
+  const NAV = [
+    { key: "home", label: "בית", icon: Home },
+    { key: "trip", label: "טיול", icon: Compass },
+    { key: "map", label: "מפה", icon: MapIcon },
+    { key: "budget", label: "תקציב", icon: Wallet },
+  ];
+
+  if (loading) {
+    return (
+      <div dir="rtl" lang="he" style={{ ...body, background: C.bg, color: C.text, minHeight: 600 }} className="w-full rounded-2xl overflow-hidden flex flex-col items-center justify-center">
+        <div style={{ color: C.textMuted, fontSize: 14 }}>טוען את הנתונים...</div>
+      </div>
+    );
+  }
+
+  return (
+    <ApiKeyContext.Provider value={{ apiKey, setApiKey }}>
+    <div dir="rtl" lang="he" style={{ ...body, background: C.bg, color: C.text, minHeight: 600 }} className="w-full rounded-2xl overflow-hidden flex flex-col">
+      <style>{FONTS}</style>
+
+      <div style={{ borderBottom: `1px solid ${C.border}` }} className="px-5 pt-5 pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Heart size={16} color={C.blush} fill={C.blush} />
+            <input value={tripName} onChange={(e) => setTripName(e.target.value)} style={{ ...display, background: "transparent", color: C.parchment, fontSize: 19, border: "none", outline: "none" }} />
+          </div>
+          <div className="flex items-center gap-3">
+            {countdown !== null && countdown >= 0 && (
+              <div style={{ ...mono, ...ltr, color: C.gold, fontSize: 12 }}>{countdown} ימים עד היציאה</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-5 py-5" style={{ minHeight: 480 }}>
+        {view === "home" && (
+          <div>
+            <div style={{ background: `linear-gradient(135deg, ${C.bgCard}, ${C.bgAlt})`, border: `1px solid ${C.border}` }} className="rounded-2xl p-6 mb-5 relative overflow-hidden">
+              <Plane size={90} color={C.gold} style={{ position: "absolute", left: -18, top: -14, opacity: 0.12, transform: "rotate(-35deg) scaleX(-1)" }} />
+              <div style={{ ...display, fontStyle: "italic", color: C.goldLight, fontSize: 13, letterSpacing: "0.04em" }} className="mb-1">{stops.length} יעדים במסלול</div>
+              <div style={{ ...display, color: C.parchment, fontSize: 30, lineHeight: 1.1 }} className="mb-2">{countdown !== null && countdown >= 0 ? `${countdown} ימים` : "תכננו את המסלול"}</div>
+              <div style={{ color: C.textMuted, fontSize: 13 }}>{firstStopDate ? `יציאה ב-${fmtDate(firstStopDate)}` : "הוסיפו תאריך טיסה ראשון בלשונית טיול"}</div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div style={{ background: C.bgCard, border: `1px solid ${C.border}` }} className="rounded-2xl p-4">
+                <Wallet size={16} color={C.gold} className="mb-2" />
+                <div style={{ ...mono, ...ltr, color: C.parchment, fontSize: 17 }}>₪{totalSpent.toLocaleString()}</div>
+                <div style={{ color: C.textMuted, fontSize: 11 }}>מתוך ₪{Number(budgetTotal).toLocaleString()} הוצאו</div>
+              </div>
+              <div style={{ background: C.bgCard, border: `1px solid ${C.border}` }} className="rounded-2xl p-4">
+                <Ticket size={16} color={C.gold} className="mb-2" />
+                <div style={{ ...display, color: C.parchment, fontSize: 15 }}>{nextBooking ? nextBooking.type : "אין עדיין"}</div>
+                <div style={{ color: C.textMuted, fontSize: 11 }}>{nextBooking ? nextBooking.stopName : "הוסיפו הזמנה בלשונית טיול"}</div>
+              </div>
+            </div>
+
+            <div style={{ ...display, fontStyle: "italic", color: C.textMuted, fontSize: 12 }} className="text-center pt-2">— יומן פרטי לשניכם —</div>
+          </div>
+        )}
+
+        {view === "trip" && !selectedStop && (
+          <div>
+            <div style={{ ...display, color: C.parchment, fontSize: 18 }} className="mb-3">המסלול שלכם</div>
+            <div className="flex items-center overflow-x-auto pb-3 mb-4">
+              {stops.map((s, i) => (
+                <div key={s.id} className="flex items-center shrink-0">
+                  <StampBadge stop={s} index={i} onClick={() => { setSelectedStopId(s.id); setView("stop"); }} />
+                  {i < stops.length - 1 && <div className="flex items-center px-1" style={{ width: 36 }}><div style={{ borderTop: `2px dashed ${C.border}`, width: "100%" }} /></div>}
+                </div>
+              ))}
+              <button onClick={addStop} style={{ border: `2px dashed ${C.border}`, color: C.gold, minWidth: 92, height: 92 }} className="rounded-full flex flex-col items-center justify-center mr-2 shrink-0">
+                <Plus size={20} /><span style={{ fontSize: 10 }} className="mt-1">הוסיפו יעד</span>
+              </button>
+            </div>
+            <div className="flex flex-col gap-3">
+              {stops.map((s) => (
+                <button key={s.id} onClick={() => { setSelectedStopId(s.id); setView("stop"); }} style={{ background: C.bgCard, border: `1px solid ${C.border}` }} className="rounded-2xl p-4 text-right flex items-center justify-between">
+                  <div>
+                    <div style={{ ...display, color: C.parchment, fontSize: 16 }}>{s.name}{s.country ? `, ${s.country}` : ""}</div>
+                    <div style={{ color: C.textMuted, fontSize: 12 }} className="mt-1">{s.start ? `${fmtDate(s.start)} – ${fmtDate(s.end)}` : "אין תאריכים"} · {s.flights.length + s.hotels.length + s.activities.length + s.transfers.length} הזמנות</div>
+                  </div>
+                  <MapPin size={16} color={C.gold} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {view === "stop" && selectedStop && (
+          <StopDetail stop={selectedStop} onBack={() => { setSelectedStopId(null); setView("trip"); }} onUpdate={(patch) => updateStop(selectedStop.id, patch)}
+            onAddItem={(kind, item) => addBookingItem(selectedStop.id, kind, item)} onRemoveItem={(kind, id) => removeBookingItem(selectedStop.id, kind, id)} onDelete={() => removeStop(selectedStop.id)} />
+        )}
+
+        {view === "map" && <MapView stops={stops} onSelect={(id) => { setSelectedStopId(id); setView("stop"); }} />}
+
+        {view === "budget" && (
+          <div>
+            <Section title="תקציב כולל" icon={Wallet}>
+              <div className="flex items-center gap-2 mb-3">
+                <span style={{ color: C.textMuted, fontSize: 13 }}>סה"כ (₪)</span>
+                <SmallInput type="number" value={budgetTotal} onChange={(e) => setBudgetTotal(e.target.value)} className="max-w-[140px]" style={ltr} />
+              </div>
+              <div style={{ background: C.bgAlt, height: 8 }} className="rounded-full overflow-hidden">
+                <div style={{ width: `${Math.min(100, (totalSpent / (budgetTotal || 1)) * 100)}%`, background: totalSpent > budgetTotal ? C.over : C.under, height: "100%" }} />
+              </div>
+              <div style={{ color: C.textMuted, fontSize: 12 }} className="mt-2">₪{totalSpent.toLocaleString()} הוצאו · ₪{Math.max(0, budgetTotal - totalSpent).toLocaleString()} נותרו</div>
+            </Section>
+
+            <Section title="לפי קטגוריה" icon={Ticket} action={<IconBtn onClick={() => setAddingExpense((v) => !v)}><Plus size={14} /></IconBtn>}>
+              {addingExpense && (
+                <div style={{ background: C.bgAlt, border: `1px solid ${C.border}` }} className="rounded-xl p-3 mb-3 flex flex-col gap-2">
+                  <SmallInput placeholder="על מה זה היה? (למשל: ארוחת ערב בבאלי)" value={newExpense.desc} onChange={(e) => setNewExpense((n) => ({ ...n, desc: e.target.value }))} />
+                  <div className="flex gap-2">
+                    <SmallInput placeholder="סכום ₪" type="number" value={newExpense.amount} onChange={(e) => setNewExpense((n) => ({ ...n, amount: e.target.value }))} style={ltr} />
+                    <select value={newExpense.categoryId} onChange={(e) => setNewExpense((n) => ({ ...n, categoryId: e.target.value }))} style={{ ...body, background: C.bgAlt, border: `1px solid ${C.border}`, color: C.text, fontSize: 13 }} className="rounded-lg px-2 py-2 w-full">
+                      {categories.map((c) => <option key={c.id} value={c.id} style={{ background: C.bg }}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex gap-2 justify-end mt-1">
+                    <button onClick={() => setAddingExpense(false)} style={{ color: C.textMuted, fontSize: 12 }}>ביטול</button>
+                    <button onClick={submitExpense} style={{ color: C.gold, fontSize: 12, fontWeight: 600 }}>הוסיפו הוצאה</button>
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-col gap-3">
+                {categories.map((c) => {
+                  const spent = spentByCategory[c.id] || 0;
+                  return (
+                    <div key={c.id}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span style={{ fontSize: 13, color: C.parchment }}>{c.name}</span>
+                        <span style={{ ...mono, ...ltr, fontSize: 12, color: C.textMuted }}>₪{spent.toLocaleString()}</span>
+                      </div>
+                      <div style={{ background: C.bgAlt, height: 6 }} className="rounded-full overflow-hidden">
+                        <div style={{ width: `${Math.min(100, (spent / (totalSpent || 1)) * 100)}%`, background: C.gold, height: "100%" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Section>
+
+            <Section title="לפי יעד" icon={MapPin}>
+              <div className="flex flex-col gap-2">
+                {stops.map((s) => {
+                  const spent = expenses.filter((e) => e.stopId === s.id).reduce((sum, e) => sum + Number(e.amount || 0), 0);
+                  return (
+                    <div key={s.id} className="flex items-center justify-between">
+                      <span style={{ fontSize: 13, color: C.parchment }}>{s.name}</span>
+                      <span style={{ ...mono, ...ltr, fontSize: 12, color: C.textMuted }}>₪{spent.toLocaleString()}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Section>
+          </div>
+        )}
+      </div>
+
+      <div style={{ borderTop: `1px solid ${C.border}`, background: C.bgAlt }} className="flex justify-around py-3">
+        {NAV.map((n) => {
+          const active = view === n.key || (n.key === "trip" && view === "stop");
+          return (
+            <button key={n.key} onClick={() => { setView(n.key); if (n.key !== "stop") setSelectedStopId(null); }} className="flex flex-col items-center gap-1" style={{ color: active ? C.goldLight : C.textMuted }}>
+              <n.icon size={18} /><span style={{ fontSize: 10 }}>{n.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+    </ApiKeyContext.Provider>
+  );
+}
