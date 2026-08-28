@@ -15,6 +15,9 @@ const PORT = process.env.PORT || 3002;
 app.use(cors());
 app.use(bodyParser.json());
 
+// Serve static frontend files from dist folder (for production)
+app.use(express.static(path.join(__dirname, 'dist')));
+
 const db = new sqlite3.Database(path.join(__dirname, 'trips.db'));
 
 // Enable WAL mode for better durability and crash recovery
@@ -317,6 +320,11 @@ app.post('/api/config/google-maps-key', (req, res) => {
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Fallback to index.html for client-side routing (SPA)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 const server = app.listen(PORT, () => {
