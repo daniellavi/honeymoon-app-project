@@ -1,5 +1,5 @@
 import express from 'express';
-import sqlite3 from 'sqlite3';
+import Database from 'better-sqlite3';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { fileURLToPath } from 'url';
@@ -18,110 +18,94 @@ app.use(bodyParser.json());
 // Serve static frontend files from dist folder (for production)
 app.use(express.static(path.join(__dirname, 'dist')));
 
-const db = new sqlite3.Database(path.join(__dirname, 'trips.db'));
-
-// Enable WAL mode for better durability and crash recovery
-db.configure('busyTimeout', 5000);
-db.run('PRAGMA journal_mode = WAL');
-db.run('PRAGMA synchronous = FULL');
+const db = new Database(path.join(__dirname, 'trips.db'));
+db.pragma('journal_mode = WAL');
+db.pragma('synchronous = FULL');
 
 // Initialize database schema
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS trips (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      budgetTotal REAL DEFAULT 30000,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS trips (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    budgetTotal REAL DEFAULT 30000,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS stops (
-      id TEXT PRIMARY KEY,
-      tripId TEXT NOT NULL,
-      name TEXT,
-      country TEXT,
-      start TEXT,
-      end TEXT,
-      lat REAL,
-      lng REAL,
-      notes TEXT,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (tripId) REFERENCES trips(id)
-    )
-  `);
+  CREATE TABLE IF NOT EXISTS stops (
+    id TEXT PRIMARY KEY,
+    tripId TEXT NOT NULL,
+    name TEXT,
+    country TEXT,
+    start TEXT,
+    end TEXT,
+    lat REAL,
+    lng REAL,
+    notes TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tripId) REFERENCES trips(id)
+  );
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS bookings (
-      id TEXT PRIMARY KEY,
-      stopId TEXT NOT NULL,
-      kind TEXT NOT NULL,
-      origin TEXT,
-      destination TEXT,
-      label TEXT,
-      detail TEXT,
-      confirmation TEXT,
-      date TEXT,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (stopId) REFERENCES stops(id)
-    )
-  `);
+  CREATE TABLE IF NOT EXISTS bookings (
+    id TEXT PRIMARY KEY,
+    stopId TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    origin TEXT,
+    destination TEXT,
+    label TEXT,
+    detail TEXT,
+    confirmation TEXT,
+    date TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (stopId) REFERENCES stops(id)
+  );
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS expenses (
-      id TEXT PRIMARY KEY,
-      tripId TEXT NOT NULL,
-      desc TEXT,
-      amount REAL,
-      categoryId TEXT,
-      stopId TEXT,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (tripId) REFERENCES trips(id)
-    )
-  `);
+  CREATE TABLE IF NOT EXISTS expenses (
+    id TEXT PRIMARY KEY,
+    tripId TEXT NOT NULL,
+    desc TEXT,
+    amount REAL,
+    categoryId TEXT,
+    stopId TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tripId) REFERENCES trips(id)
+  );
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS categories (
-      id TEXT PRIMARY KEY,
-      tripId TEXT NOT NULL,
-      name TEXT NOT NULL,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (tripId) REFERENCES trips(id)
-    )
-  `);
-});
+  CREATE TABLE IF NOT EXISTS categories (
+    id TEXT PRIMARY KEY,
+    tripId TEXT NOT NULL,
+    name TEXT NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tripId) REFERENCES trips(id)
+  );
+`);
 
-// Helper function to serialize database calls
+// Helper functions for database queries
 const dbAll = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.all(query, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
+  try {
+    return Promise.resolve(db.prepare(query).all(...params));
+  } catch (err) {
+    return Promise.reject(err);
+  }
 };
 
 const dbRun = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.run(query, params, function(err) {
-      if (err) reject(err);
-      else resolve(this);
-    });
-  });
+  try {
+    return Promise.resolve(db.prepare(query).run(...params));
+  } catch (err) {
+    return Promise.reject(err);
+  }
 };
 
 const dbGet = (query, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.get(query, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
+  try {
+    return Promise.resolve(db.prepare(query).get(...params));
+  } catch (err) {
+    return Promise.reject(err);
+  }
 };
 
 // Get or create default trip
@@ -339,26 +323,19 @@ const server = app.listen(PORT, () => {
 });
 
 // Graceful shutdown to ensure all pending writes complete
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, closing server...');
-  db.close((err) => {
-    if (err) console.error('Error closing database:', err);
-    else console.log('Database closed');
-    server.close(() => {
-      console.log('Server closed');
-      process.exit(0);
-    });
+const shutdown = () => {
+  console.log('Closing server...');
+  try {
+    db.close();
+    console.log('Database closed');
+  } catch (err) {
+    console.error('Error closing database:', err);
+  }
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
   });
-});
+};
 
-process.on('SIGINT', () => {
-  console.log('SIGINT received, closing server...');
-  db.close((err) => {
-    if (err) console.error('Error closing database:', err);
-    else console.log('Database closed');
-    server.close(() => {
-      console.log('Server closed');
-      process.exit(0);
-    });
-  });
-});
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
