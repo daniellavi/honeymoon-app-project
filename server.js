@@ -307,7 +307,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Fallback to index.html for client-side routing (SPA)
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
