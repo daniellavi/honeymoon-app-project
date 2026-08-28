@@ -103,7 +103,7 @@ app.post('/api/stops', async (req, res) => {
   try {
     const { id, tripId, name, country, start, end, lat, lng, notes } = req.body;
     await dbRun(
-      'INSERT INTO stops (id, tripId, name, country, start, end, lat, lng, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+      'INSERT INTO stops (id, tripId, name, country, "start", "end", lat, lng, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
       [id, tripId, name, country, start, end, lat, lng, notes]
     );
     res.json({ success: true });
@@ -118,7 +118,7 @@ app.put('/api/stops/:id', async (req, res) => {
     const { id } = req.params;
     const { name, country, start, end, lat, lng, notes } = req.body;
     await dbRun(
-      'UPDATE stops SET name = $1, country = $2, start = $3, end = $4, lat = $5, lng = $6, notes = $7, updatedAt = CURRENT_TIMESTAMP WHERE id = $8',
+      'UPDATE stops SET name = $1, country = $2, "start" = $3, "end" = $4, lat = $5, lng = $6, notes = $7, updatedAt = CURRENT_TIMESTAMP WHERE id = $8',
       [name, country, start, end, lat, lng, notes, id]
     );
     res.json({ success: true });
@@ -292,8 +292,8 @@ async function startServer() {
         tripId TEXT NOT NULL,
         name TEXT,
         country TEXT,
-        start TEXT,
-        end TEXT,
+        "start" TEXT,
+        "end" TEXT,
         lat NUMERIC,
         lng NUMERIC,
         notes TEXT,
