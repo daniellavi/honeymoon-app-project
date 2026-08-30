@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback, createContext, useContext } from "react";
-import { Plane, MapPin, Calendar, Wallet, Home, Hotel, Ticket, Plus, X, Heart, Compass, Trash2, Map as MapIcon, Train, Pencil, Lightbulb, ChevronDown } from "lucide-react";
+import { Plane, MapPin, Calendar, Wallet, Home, Hotel, Ticket, Plus, X, Heart, Compass, Trash2, Map as MapIcon, Train, Pencil, Lightbulb, ChevronDown, FileUp, Download, File, Loader } from "lucide-react";
 
 /* The Google Maps API key is entered inside the running app (gear icon in
    the header) rather than hardcoded here, so no code editing is needed. */
@@ -284,6 +284,88 @@ function fmtDate(d) {
   return `${day}/${month}/${year}`;
 }
 
+function sortByDateTime(items) {
+  return [...items].sort((a, b) => {
+    const aDate = a.date ? new Date(a.date) : new Date(0);
+    const bDate = b.date ? new Date(b.date) : new Date(0);
+    if (aDate.getTime() !== bDate.getTime()) return aDate - bDate;
+    const aTime = a.time || "00:00";
+    const bTime = b.time || "00:00";
+    return aTime.localeCompare(bTime);
+  });
+}
+
+function splitTokyoByOsaka(stops) {
+  const tokyoIdx = stops.findIndex((s) => {
+    const name = (s.name || "").toLowerCase();
+    return name.includes("tokyo") || name.includes("טוקיו");
+  });
+  const osakaIdx = stops.findIndex((s) => {
+    const name = (s.name || "").toLowerCase();
+    return name.includes("osaka") || name.includes("אוסקה");
+  });
+
+  if (tokyoIdx === -1 || osakaIdx === -1) return stops;
+
+  const tokyo = stops[tokyoIdx];
+  const osaka = stops[osakaIdx];
+  const osakaStart = osaka.start ? new Date(osaka.start) : new Date(0);
+
+  const splitBookings = (bookings) => {
+    const before = [], after = [];
+    bookings.forEach((item) => {
+      const itemDate = item.date ? new Date(item.date) : new Date(9999, 0, 1);
+      if (itemDate < osakaStart) before.push(item);
+      else after.push(item);
+    });
+    return { before, after };
+  };
+
+  const flights = splitBookings(tokyo.flights || []);
+  const hotels = splitBookings(tokyo.hotels || []);
+  const activities = splitBookings(tokyo.activities || []);
+  const transfers = splitBookings(tokyo.transfers || []);
+
+  const hasAfter = flights.after.length > 0 || hotels.after.length > 0 || activities.after.length > 0 || transfers.after.length > 0;
+  const hasBefore = flights.before.length > 0 || hotels.before.length > 0 || activities.before.length > 0 || transfers.before.length > 0;
+
+  if (!hasAfter || !hasBefore) return stops;
+
+  const tokyoBefore = {
+    ...tokyo,
+    flights: flights.before,
+    hotels: hotels.before,
+    activities: activities.before,
+    transfers: transfers.before,
+    _isSplit: true
+  };
+
+  const tokyoAfter = {
+    ...tokyo,
+    id: tokyo.id + "-after",
+    name: tokyo.name + " (continued)",
+    flights: flights.after,
+    hotels: hotels.after,
+    activities: activities.after,
+    transfers: transfers.after,
+    _isSplit: true
+  };
+
+  const result = [];
+  stops.forEach((stop, idx) => {
+    if (idx === tokyoIdx) {
+      result.push(tokyoBefore);
+    } else if (idx === osakaIdx) {
+      result.push(stop);
+      if (hasAfter) result.push(tokyoAfter);
+    } else {
+      result.push(stop);
+    }
+  });
+
+  return result;
+}
+
 function daysUntil(dateStr) {
   if (!dateStr) return null;
   const target = new Date(dateStr + "T00:00:00");
@@ -531,7 +613,7 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, isDangerou
   );
 };
 
-const BookingList = ({ kind, icon, title, placeholder, items, addingKind, setAddingKind, form, setForm, formErrors, setFormErrors, onSubmit, onRemoveItem, onEditItem, stopId, expandedBookings, setExpandedBookings }) => {
+const BookingList = ({ kind, icon, title, placeholder, items, addingKind, setAddingKind, form, setForm, formErrors, setFormErrors, onSubmit, onRemoveItem, onEditItem, stopId, expandedBookings, setExpandedBookings, handleFileUpload, removeFile, downloadFile }) => {
   const placeType = kind === "hotels" ? "lodging" : kind === "activities" ? "establishment" : undefined;
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(null);
@@ -670,6 +752,66 @@ const BookingList = ({ kind, icon, title, placeholder, items, addingKind, setAdd
               </div>
             </>
           )}
+          <div>
+            <input type="file" id={`file-upload-${Math.random()}`} onChange={(e) => handleFileUpload(e, false)} style={{ display: "none" }} accept="*" />
+            <button
+              onClick={(e) => {
+                const fileInput = e.target.parentElement.querySelector("input[type='file']");
+                fileInput?.click();
+              }}
+              style={{
+                color: C.gold,
+                fontSize: 12,
+                border: `1px dashed ${C.border}`,
+                background: `rgba(212, 165, 116, 0.08)`,
+                padding: "8px 12px",
+                borderRadius: "6px",
+                transition: "all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                width: "100%",
+                textAlign: "center"
+              }}
+              className="flex items-center justify-center gap-2 hover:border-solid hover:bg-opacity-15 active:scale-95"
+            >
+              <FileUp size={12} /> העלה קובץ (כרטיס טיסה, הזמנה וכו׳)
+            </button>
+            {form.files && form.files.length > 0 && (
+              <div style={{ marginTop: 8, padding: "8px", background: `rgba(212, 165, 116, 0.06)`, borderRadius: "6px" }}>
+                <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 6 }}>קבצים מועלים ({form.files.length}):</div>
+                {form.files.map((file) => (
+                  <div
+                    key={file.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "6px 8px",
+                      background: C.bgAlt,
+                      borderRadius: "4px",
+                      marginBottom: 4,
+                      fontSize: 11,
+                      color: C.textMuted
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                      <File size={11} style={{ flexShrink: 0 }} />
+                      <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={file.name}>
+                        {file.name}
+                      </div>
+                      <span style={{ color: C.gold, fontSize: 10, flexShrink: 0 }}>({Math.round(file.size / 1024)}KB)</span>
+                    </div>
+                    <button
+                      onClick={() => removeFile(file.id, false)}
+                      style={{ color: C.over, fontSize: 10, cursor: "pointer", transition: "all 0.3s" }}
+                      className="hover:opacity-80 active:scale-95"
+                      title="מחק"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="flex gap-2 justify-end mt-1">
             <button onClick={() => { setAddingKind(null); setFormErrors({}); }} style={{ color: C.textMuted, fontSize: 12 }}>ביטול</button>
             <button onClick={() => onSubmit(kind)} style={{ color: C.gold, fontSize: 12, fontWeight: 600 }}>שמור</button>
@@ -678,7 +820,7 @@ const BookingList = ({ kind, icon, title, placeholder, items, addingKind, setAdd
       )}
           {items.length === 0 && addingKind !== kind && <div style={{ color: C.textMuted, fontSize: 12 }}>עדיין לא נשמר כלום.</div>}
           <div className="flex flex-col gap-2" style={{ maxHeight: 300, overflowY: "auto", paddingRight: 4, paddingLeft: 4 }}>
-            {items.map((item) => (
+            {sortByDateTime(items).map((item) => (
               <div key={item.id}>
                 {editingId === item.id && editForm ? (
                   <div style={{ background: C.bgAlt, border: `1px solid ${C.border}`, boxShadow: shadowSm }} className="rounded-xl p-4 mb-2 flex flex-col gap-2.5">
@@ -715,6 +857,66 @@ const BookingList = ({ kind, icon, title, placeholder, items, addingKind, setAdd
                         </div>
                       </>
                     )}
+                    <div>
+                      <input type="file" id={`file-upload-edit-${Math.random()}`} onChange={(e) => handleFileUpload(e, true, editForm, setEditForm)} style={{ display: "none" }} accept="*" />
+                      <button
+                        onClick={(e) => {
+                          const fileInput = e.target.parentElement.querySelector("input[type='file']");
+                          fileInput?.click();
+                        }}
+                        style={{
+                          color: C.gold,
+                          fontSize: 12,
+                          border: `1px dashed ${C.border}`,
+                          background: `rgba(212, 165, 116, 0.08)`,
+                          padding: "8px 12px",
+                          borderRadius: "6px",
+                          transition: "all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                          width: "100%",
+                          textAlign: "center"
+                        }}
+                        className="flex items-center justify-center gap-2 hover:border-solid hover:bg-opacity-15 active:scale-95"
+                      >
+                        <FileUp size={12} /> העלה קובץ
+                      </button>
+                      {editForm.files && editForm.files.length > 0 && (
+                        <div style={{ marginTop: 8, padding: "8px", background: `rgba(212, 165, 116, 0.06)`, borderRadius: "6px" }}>
+                          <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 6 }}>קבצים ({editForm.files.length}):</div>
+                          {editForm.files.map((file) => (
+                            <div
+                              key={file.id}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                padding: "6px 8px",
+                                background: C.bgAlt,
+                                borderRadius: "4px",
+                                marginBottom: 4,
+                                fontSize: 11,
+                                color: C.textMuted
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                                <File size={11} style={{ flexShrink: 0 }} />
+                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={file.name}>
+                                  {file.name}
+                                </div>
+                                <span style={{ color: C.gold, fontSize: 10, flexShrink: 0 }}>({Math.round(file.size / 1024)}KB)</span>
+                              </div>
+                              <button
+                                onClick={() => removeFile(file.id, true, editForm, setEditForm)}
+                                style={{ color: C.over, fontSize: 10, cursor: "pointer", transition: "all 0.3s" }}
+                                className="hover:opacity-80 active:scale-95"
+                                title="מחק"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <div className="flex gap-2 justify-end mt-1">
                       <button onClick={() => { cancelEdit(); setEditErrors({}); }} style={{ color: C.textMuted, fontSize: 12 }}>ביטול</button>
                       <button onClick={saveEdit} style={{ color: C.gold, fontSize: 12, fontWeight: 600 }}>עדכן</button>
@@ -736,6 +938,43 @@ const BookingList = ({ kind, icon, title, placeholder, items, addingKind, setAdd
                         {item.time && <span style={{ ...mono, color: C.gold, fontSize: 11, opacity: 0.8 }}><bdi>{item.time}</bdi></span>}
                         {item.date && <span style={{ ...mono, color: C.gold, fontSize: 11, opacity: 0.8 }}><bdi>{fmtDate(item.date)}</bdi></span>}
                       </div>
+                      {item.files && item.files.length > 0 && (
+                        <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
+                          <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                            <FileUp size={11} /> {item.files.length} קובץ{item.files.length > 1 ? 'ים' : ''}
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {item.files.map((file) => (
+                              <div
+                                key={file.id}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  padding: "6px 8px",
+                                  background: `rgba(212, 165, 116, 0.08)`,
+                                  borderRadius: "4px",
+                                  fontSize: 11,
+                                  color: C.textMuted
+                                }}
+                              >
+                                <File size={11} style={{ flexShrink: 0, color: C.gold }} />
+                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }} title={file.name}>
+                                  {file.name}
+                                </div>
+                                <button
+                                  onClick={() => downloadFile(file)}
+                                  style={{ color: C.gold, fontSize: 10, cursor: "pointer", transition: "all 0.3s", flexShrink: 0 }}
+                                  className="hover:opacity-80 active:scale-95"
+                                  title="הורד"
+                                >
+                                  <Download size={11} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2 ml-2">
                       <button onClick={() => startEdit(item)} style={{ color: C.gold, transition: "all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)" }} title="ערוך" className="hover:opacity-80 active:scale-95"><Pencil size={14} /></button>
@@ -754,9 +993,49 @@ const BookingList = ({ kind, icon, title, placeholder, items, addingKind, setAdd
 
 const StopDetail = ({ stop, onBack, onUpdate, onAddItem, onRemoveItem, onEditItem, onDelete, onDeleteConfirm, expandedBookings, setExpandedBookings }) => {
   const [addingKind, setAddingKind] = useState(null);
-  const emptyForm = { label: "", origin: "", destination: "", detail: "", confirmation: "", date: "", time: "" };
+  const emptyForm = { label: "", origin: "", destination: "", detail: "", confirmation: "", date: "", time: "", files: [] };
   const [form, setForm] = useState(emptyForm);
   const [formErrors, setFormErrors] = useState({});
+
+  const handleFileUpload = async (e, isEdit = false, editForm = null, setEditForm = null) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result;
+      const fileData = {
+        id: newId(),
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        data: base64
+      };
+
+      if (isEdit && editForm && setEditForm) {
+        setEditForm((f) => ({ ...f, files: [...(f.files || []), fileData] }));
+      } else {
+        setForm((f) => ({ ...f, files: [...(f.files || []), fileData] }));
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const removeFile = (fileId, isEdit = false, editForm = null, setEditForm = null) => {
+    if (isEdit && editForm && setEditForm) {
+      setEditForm((f) => ({ ...f, files: (f.files || []).filter((f) => f.id !== fileId) }));
+    } else {
+      setForm((f) => ({ ...f, files: (f.files || []).filter((f) => f.id !== fileId) }));
+    }
+  };
+
+  const downloadFile = (file) => {
+    const link = document.createElement("a");
+    link.href = file.data;
+    link.download = file.name;
+    link.click();
+  };
 
   const submit = (kind) => {
     const errors = {};
@@ -803,13 +1082,13 @@ const StopDetail = ({ stop, onBack, onUpdate, onAddItem, onRemoveItem, onEditIte
       </div>
 
       <BookingList kind="flights" icon={Plane} title="טיסות" placeholder="לדוגמה: תל אביב → פריז"
-        items={stop.flights} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} formErrors={formErrors} setFormErrors={setFormErrors} onSubmit={submit} onRemoveItem={onRemoveItem} onEditItem={onEditItem} stopId={stop.id} expandedBookings={expandedBookings} setExpandedBookings={setExpandedBookings} />
+        items={stop.flights} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} formErrors={formErrors} setFormErrors={setFormErrors} onSubmit={submit} onRemoveItem={onRemoveItem} onEditItem={onEditItem} stopId={stop.id} expandedBookings={expandedBookings} setExpandedBookings={setExpandedBookings} handleFileUpload={handleFileUpload} removeFile={removeFile} downloadFile={downloadFile} />
       <BookingList kind="hotels" icon={Hotel} title="מלונות" placeholder="חפשו מלון…"
-        items={stop.hotels} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} formErrors={formErrors} setFormErrors={setFormErrors} onSubmit={submit} onRemoveItem={onRemoveItem} onEditItem={onEditItem} stopId={stop.id} expandedBookings={expandedBookings} setExpandedBookings={setExpandedBookings} />
+        items={stop.hotels} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} formErrors={formErrors} setFormErrors={setFormErrors} onSubmit={submit} onRemoveItem={onRemoveItem} onEditItem={onEditItem} stopId={stop.id} expandedBookings={expandedBookings} setExpandedBookings={setExpandedBookings} handleFileUpload={handleFileUpload} removeFile={removeFile} downloadFile={downloadFile} />
       <BookingList kind="activities" icon={Ticket} title="פעילויות וסיורים" placeholder="חפשו אטרקציה או פעילות…"
-        items={stop.activities} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} formErrors={formErrors} setFormErrors={setFormErrors} onSubmit={submit} onRemoveItem={onRemoveItem} onEditItem={onEditItem} stopId={stop.id} expandedBookings={expandedBookings} setExpandedBookings={setExpandedBookings} />
+        items={stop.activities} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} formErrors={formErrors} setFormErrors={setFormErrors} onSubmit={submit} onRemoveItem={onRemoveItem} onEditItem={onEditItem} stopId={stop.id} expandedBookings={expandedBookings} setExpandedBookings={setExpandedBookings} handleFileUpload={handleFileUpload} removeFile={removeFile} downloadFile={downloadFile} />
       <BookingList kind="transfers" icon={Train} title="הסעות ותחבורה" placeholder="למשל: רכבת, חציית ferry, אוטובוס…"
-        items={stop.transfers} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} formErrors={formErrors} setFormErrors={setFormErrors} onSubmit={submit} onRemoveItem={onRemoveItem} onEditItem={onEditItem} stopId={stop.id} expandedBookings={expandedBookings} setExpandedBookings={setExpandedBookings} />
+        items={stop.transfers} addingKind={addingKind} setAddingKind={setAddingKind} form={form} setForm={setForm} formErrors={formErrors} setFormErrors={setFormErrors} onSubmit={submit} onRemoveItem={onRemoveItem} onEditItem={onEditItem} stopId={stop.id} expandedBookings={expandedBookings} setExpandedBookings={setExpandedBookings} handleFileUpload={handleFileUpload} removeFile={removeFile} downloadFile={downloadFile} />
 
       <Section title="הערות ומקומות" icon={MapPin}>
         <textarea
@@ -1399,6 +1678,7 @@ const MapView = ({ stops, onSelect }) => {
 export default function App() {
   const [view, setView] = useState("home");
   const [selectedStopId, setSelectedStopId] = useState(null);
+  const [selectedSplitVersion, setSelectedSplitVersion] = useState(null);
   const [tripId, setTripId] = useState(null);
   const [tripName, setTripName] = useState("ירח הדבש שלנו");
   const [apiKey, setApiKey] = useState("");
@@ -1493,7 +1773,38 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [tripName, budgetTotal, tripId]);
 
-  const selectedStop = stops.find((s) => s.id === selectedStopId);
+  const selectedStop = useMemo(() => {
+    const stop = stops.find((s) => s.id === selectedStopId);
+    if (!stop) return stop;
+
+    // Only apply split filtering to Tokyo stops
+    const isTokyoStop = stop.id.includes('tokyo') || stop.name?.toLowerCase().includes('tokyo') || stop.name?.toLowerCase().includes('טוקיו');
+    if (!isTokyoStop || !selectedSplitVersion) return stop;
+
+    const osaka = stops.find((s) => {
+      const name = (s.name || "").toLowerCase();
+      return name.includes("osaka") || name.includes("אוסקה");
+    });
+    if (!osaka) return stop;
+
+    const osakaStart = osaka.start ? new Date(osaka.start) : new Date(0);
+
+    const filterBookings = (bookings) => {
+      return bookings.filter((item) => {
+        const itemDate = item.date ? new Date(item.date) : new Date(9999, 0, 1);
+        if (selectedSplitVersion === 'before') return itemDate < osakaStart;
+        else return itemDate >= osakaStart;
+      });
+    };
+
+    return {
+      ...stop,
+      flights: filterBookings(stop.flights || []),
+      hotels: filterBookings(stop.hotels || []),
+      activities: filterBookings(stop.activities || []),
+      transfers: filterBookings(stop.transfers || [])
+    };
+  }, [stops, selectedStopId, selectedSplitVersion]);
 
   /* Stable identity: MapView rebuilds its markers and re-fits the viewport when
      onSelect changes, which would yank the map back mid-pan on every render. */
@@ -1632,7 +1943,8 @@ export default function App() {
   if (loading) {
     return (
       <div dir="rtl" lang="he" style={{ ...body, background: C.bg, color: C.text, minHeight: 600 }} className="w-full rounded-2xl overflow-hidden flex flex-col items-center justify-center">
-        <div style={{ color: C.textMuted, fontSize: 14 }}>טוען את הנתונים...</div>
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        <div style={{ width: 50, height: 50, border: `3px solid ${C.border}`, borderTop: `3px solid ${C.gold}`, borderRadius: "50%", animation: "spin 1.5s linear infinite" }} />
       </div>
     );
   }
@@ -1742,59 +2054,74 @@ export default function App() {
         {view === "trip" && !selectedStop && (
           <div>
             <div style={{ ...display, color: C.parchment, fontSize: 20, letterSpacing: "-0.01em" }} className="mb-5 font-semibold">המסלול שלכם</div>
-            <div className="flex items-center overflow-x-auto pb-3 mb-4">
-              {stops.map((s, i) => (
-                <div key={s.id} className="flex items-center shrink-0">
-                  <StampBadge stop={s} index={i} onClick={() => { setSelectedStopId(s.id); setView("stop"); }} />
-                  {i < stops.length - 1 && <div className="flex items-center px-1" style={{ width: 36 }}><div style={{ borderTop: `2px dashed ${C.border}`, width: "100%" }} /></div>}
-                </div>
-              ))}
-              <button
-                onClick={addStop}
-                style={{
-                  border: `1.5px dashed ${C.border}`,
-                  color: C.gold,
-                  minWidth: 92,
-                  height: 92,
-                  transition: "all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
-                }}
-                className="rounded-full flex flex-col items-center justify-center mr-2 shrink-0 hover:border-gold hover:bg-opacity-5"
-              >
-                <Plus size={20} />
-                <span style={{ fontSize: 10, marginTop: 6 }}>הוסיפו יעד</span>
-              </button>
-            </div>
-            <div className="flex flex-col gap-3">
-              {stops.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => { setSelectedStopId(s.id); setView("stop"); }}
-                  style={{
-                    background: `linear-gradient(135deg, ${C.bgCard}, ${C.bgCardHi})`,
-                    border: `1px solid ${C.border}`,
-                    boxShadow: shadowSm,
-                    transition: "all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
-                  }}
-                  className="rounded-xl p-5 text-right flex items-center justify-between hover:shadow-md hover:border-opacity-50"
-                >
-                  <div>
-                    <div style={{ ...display, color: C.parchment, fontSize: 16, letterSpacing: "-0.01em" }}>{s.name}{s.country ? `, ${s.country}` : ""}</div>
-                    <div style={{ color: C.textMuted, fontSize: 12 }} className="mt-2 flex items-center gap-2">
-                      <span>{s.start ? <><bdi>{fmtDate(s.start)}</bdi> – <bdi>{fmtDate(s.end)}</bdi></> : "אין תאריכים"}</span>
-                      <span>·</span>
-                      <span style={{ ...mono, ...ltr }}>{s.flights.length + s.hotels.length + s.activities.length + s.transfers.length}</span>
-                      <span>הזמנות</span>
-                    </div>
+            {(() => {
+              const displayStops = splitTokyoByOsaka(stops);
+              return (
+                <>
+                  <div className="flex items-center overflow-x-auto pb-3 mb-4">
+                    {displayStops.map((s, i) => (
+                      <div key={s.id} className="flex items-center shrink-0">
+                        <StampBadge stop={s} index={i} onClick={() => {
+                          setSelectedStopId(s.id.replace('-after', ''));
+                          setSelectedSplitVersion(s.id.includes('-after') ? 'after' : 'before');
+                          setView("stop");
+                        }} />
+                        {i < displayStops.length - 1 && <div className="flex items-center px-1" style={{ width: 36 }}><div style={{ borderTop: `2px dashed ${C.border}`, width: "100%" }} /></div>}
+                      </div>
+                    ))}
+                    <button
+                      onClick={addStop}
+                      style={{
+                        border: `1.5px dashed ${C.border}`,
+                        color: C.gold,
+                        minWidth: 92,
+                        height: 92,
+                        transition: "all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+                      }}
+                      className="rounded-full flex flex-col items-center justify-center mr-2 shrink-0 hover:border-gold hover:bg-opacity-5"
+                    >
+                      <Plus size={20} />
+                      <span style={{ fontSize: 10, marginTop: 6 }}>הוסיפו יעד</span>
+                    </button>
                   </div>
-                  <MapPin size={16} color={C.gold} />
-                </button>
-              ))}
-            </div>
+                  <div className="flex flex-col gap-3">
+                    {displayStops.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => {
+                          setSelectedStopId(s.id.replace('-after', ''));
+                          setSelectedSplitVersion(s.id.includes('-after') ? 'after' : 'before');
+                          setView("stop");
+                        }}
+                        style={{
+                          background: `linear-gradient(135deg, ${C.bgCard}, ${C.bgCardHi})`,
+                          border: `1px solid ${C.border}`,
+                          boxShadow: shadowSm,
+                          transition: "all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+                        }}
+                        className="rounded-xl p-5 text-right flex items-center justify-between hover:shadow-md hover:border-opacity-50"
+                      >
+                        <div>
+                          <div style={{ ...display, color: C.parchment, fontSize: 16, letterSpacing: "-0.01em" }}>{s.name}{s.country ? `, ${s.country}` : ""}</div>
+                          <div style={{ color: C.textMuted, fontSize: 12 }} className="mt-2 flex items-center gap-2">
+                            <span>{s.start ? <><bdi>{fmtDate(s.start)}</bdi> – <bdi>{fmtDate(s.end)}</bdi></> : "אין תאריכים"}</span>
+                            <span>·</span>
+                            <span style={{ ...mono, ...ltr }}>{s.flights.length + s.hotels.length + s.activities.length + s.transfers.length}</span>
+                            <span>הזמנות</span>
+                          </div>
+                        </div>
+                        <MapPin size={16} color={C.gold} />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 
         {view === "stop" && selectedStop && (
-          <StopDetail stop={selectedStop} onBack={() => { setSelectedStopId(null); setView("trip"); }} onUpdate={(patch) => updateStop(selectedStop.id, patch)}
+          <StopDetail stop={selectedStop} onBack={() => { setSelectedStopId(null); setSelectedSplitVersion(null); setView("trip"); }} onUpdate={(patch) => updateStop(selectedStop.id, patch)}
             onAddItem={(kind, item) => addBookingItem(selectedStop.id, kind, item)} onRemoveItem={(kind, id) => removeBookingItem(selectedStop.id, kind, id)} onEditItem={(kind, id, item) => editBookingItem(selectedStop.id, kind, id, item)} onDelete={() => removeStop(selectedStop.id)} onDeleteConfirm={() => setDeleteStopId(selectedStop.id)} expandedBookings={expandedBookings} setExpandedBookings={setExpandedBookings} />
         )}
 
@@ -2163,7 +2490,7 @@ export default function App() {
           return (
             <button
               key={n.key}
-              onClick={() => { setView(n.key); if (n.key !== "stop") setSelectedStopId(null); }}
+              onClick={() => { setView(n.key); if (n.key !== "stop") { setSelectedStopId(null); setSelectedSplitVersion(null); } }}
               className="flex flex-col items-center gap-1.5 transition-all duration-200"
               style={{
                 color: active ? C.goldLight : C.textMuted,
