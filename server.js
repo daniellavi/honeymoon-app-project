@@ -13,7 +13,8 @@ const app = express();
 const PORT = process.env.PORT || 3002;
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
 // Serve static frontend files from dist folder (for production)
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -142,10 +143,10 @@ app.delete('/api/stops/:id', async (req, res) => {
 // Add booking
 app.post('/api/bookings', async (req, res) => {
   try {
-    const { id, stopId, kind, origin, destination, label, detail, confirmation, date, time } = req.body;
+    const { id, stopId, kind, origin, destination, label, detail, confirmation, date, time, files } = req.body;
     await dbRun(
-      'INSERT INTO bookings (id, stopId, kind, origin, destination, label, detail, confirmation, "date") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-      [id, stopId, kind, origin, destination, label, detail, confirmation, date]
+      'INSERT INTO bookings (id, stopId, kind, origin, destination, label, detail, confirmation, "date", files) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+      [id, stopId, kind, origin, destination, label, detail, confirmation, date, files ? JSON.stringify(files) : null]
     );
     res.json({ success: true });
   } catch (err) {
@@ -157,10 +158,10 @@ app.post('/api/bookings', async (req, res) => {
 app.put('/api/bookings/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { kind, origin, destination, label, detail, confirmation, date, time } = req.body;
+    const { kind, origin, destination, label, detail, confirmation, date, time, files } = req.body;
     await dbRun(
-      'UPDATE bookings SET kind = $1, origin = $2, destination = $3, label = $4, detail = $5, confirmation = $6, "date" = $7, updatedAt = CURRENT_TIMESTAMP WHERE id = $8',
-      [kind, origin, destination, label, detail, confirmation, date, id]
+      'UPDATE bookings SET kind = $1, origin = $2, destination = $3, label = $4, detail = $5, confirmation = $6, "date" = $7, files = $8, updatedAt = CURRENT_TIMESTAMP WHERE id = $9',
+      [kind, origin, destination, label, detail, confirmation, date, files ? JSON.stringify(files) : null, id]
     );
     res.json({ success: true });
   } catch (err) {
@@ -314,10 +315,16 @@ async function startServer() {
         detail TEXT,
         confirmation TEXT,
         "date" TEXT,
+        files JSONB,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (stopId) REFERENCES stops(id)
       )
+    `);
+
+    // Migrate existing bookings to add files column if it doesn't exist
+    await pool.query(`
+      ALTER TABLE bookings ADD COLUMN IF NOT EXISTS files JSONB
     `);
 
     await pool.query(`

@@ -1032,10 +1032,22 @@ const StopDetail = ({ stop, onBack, onUpdate, onAddItem, onRemoveItem, onEditIte
   };
 
   const downloadFile = (file) => {
+    const dataUrl = file.data;
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'application/octet-stream';
+    const bstr = atob(arr[1]);
+    const n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      u8arr[i] = bstr.charCodeAt(i);
+    }
+    const blob = new Blob([u8arr], { type: mime });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = file.data;
+    link.href = url;
     link.download = file.name;
     link.click();
+    URL.revokeObjectURL(url);
   };
 
   const submit = (kind) => {
