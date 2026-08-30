@@ -24,6 +24,7 @@ const C = {
 
 const FONTS = `
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@keyframes slideDown { from { opacity: 0; margin-top: -16px; } to { opacity: 1; margin-top: 0; } }
 .pac-container { background:${C.bgCardHi}; border:1px solid ${C.border}; border-radius:10px; overflow:hidden; font-family:'Inter',sans-serif; margin-top:6px; box-shadow:0 8px 24px rgba(0,0,0,0.3); }
 .pac-item { color:${C.text}; border-color:${C.border}; padding:10px 14px; font-size:13px; transition: background 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
 .pac-item:hover { background:${C.bgAlt}; color:${C.goldLight}; }
@@ -705,7 +706,7 @@ const BookingList = ({ kind, icon, title, placeholder, items, addingKind, setAdd
         <span style={{ color: C.gold, fontSize: 12, opacity: 0.7 }}>{items.length}</span>
       </button>
       {isExpanded && (
-        <div style={{ background: `linear-gradient(135deg, ${C.bgCard}, ${C.bgCardHi})`, border: `1px solid ${C.border}`, boxShadow: shadowSm, borderRadius: "12px", padding: "16px 20px", marginBottom: "16px" }}>
+        <div style={{ background: `linear-gradient(135deg, ${C.bgCard}, ${C.bgCardHi})`, border: `1px solid ${C.border}`, boxShadow: shadowSm, borderRadius: "12px", padding: "16px 20px", marginBottom: "16px", animation: "slideDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }}>
           <div className="flex items-center justify-between mb-3">
             <span></span>
             <IconBtn onClick={() => setAddingKind(addingKind === kind ? null : kind)}><Plus size={14} /></IconBtn>
