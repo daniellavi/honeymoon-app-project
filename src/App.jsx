@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback, createContext, useContext } from "react";
-import { Plane, MapPin, Calendar, Wallet, Home, Hotel, Ticket, Plus, X, Heart, Compass, Trash2, Map as MapIcon, Train, Pencil, Lightbulb, ChevronDown, FileUp, Download, File, Loader } from "lucide-react";
+import { Plane, MapPin, Calendar, Wallet, Home, Hotel, Ticket, Plus, X, Heart, Compass, Trash2, Map as MapIcon, Train, Pencil, Lightbulb, ChevronDown, FileUp, Download, File, Loader, Wifi, WifiOff, CheckCircle2 } from "lucide-react";
+import { useOfflineSync, saveTripToLocalStorage, loadTripFromLocalStorage, fetchWithOfflineSupport } from "./useOfflineSync";
 
 /* The Google Maps API key is entered inside the running app (gear icon in
    the header) rather than hardcoded here, so no code editing is needed. */
@@ -41,8 +42,7 @@ const body = { fontFamily: "'Roboto', sans-serif", letterSpacing: "0.003em" };
 const mono = { fontFamily: "'JetBrains Mono', monospace", letterSpacing: "-0.005em" };
 const ltr = { direction: "ltr", unicodeBidi: "isolate" };
 
-let uid = 100;
-const newId = () => `id-${uid++}`;
+const newId = () => `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 const CATEGORY_SEED = ["טיסות", "מלונות", "אוכל ומסעדות", "פעילויות וסיורים", "קניות", "אחר"];
 
@@ -1710,6 +1710,18 @@ export default function App() {
   const [deleteStopId, setDeleteStopId] = useState(null);
   const [expenseErrors, setExpenseErrors] = useState({});
 
+  // Offline sync
+  const { isOnline, isSyncing, hasPending, pendingCount } = useOfflineSync();
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+  const showSyncSuccess = lastSyncTime && Date.now() - lastSyncTime < 3000; // Show for 3 seconds
+
+  // Show green checkmark when sync completes
+  useEffect(() => {
+    if (isOnline && !isSyncing && !hasPending && pendingCount === 0) {
+      setLastSyncTime(Date.now());
+    }
+  }, [isOnline, isSyncing, hasPending, pendingCount]);
+
   // Load trip data and API key from server on mount
   useEffect(() => {
     const loadTrip = async () => {
@@ -1742,11 +1754,14 @@ export default function App() {
         setNewExpense((prev) => ({ ...prev, categoryId: loadedCategories[0]?.id || "" }));
         setExpenses(tripData.expenses || []);
 
+        // Save to localStorage for offline support
+        saveTripToLocalStorage(tripData);
+
         // Initialize categories if they don't exist
         if (tripData.categories.length === 0) {
           CATEGORY_SEED.forEach((name) => {
             const catId = newId();
-            fetch('/api/categories', {
+            fetchWithOfflineSupport('/api/categories', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ id: catId, tripId: trip.id, name }),
@@ -1755,17 +1770,28 @@ export default function App() {
         }
       } catch (err) {
         console.error('Error loading trip:', err);
-        // Fallback to local data if server is unavailable
-        setTripId('local-' + Date.now());
-        setStops([
-          { id: "s1", name: "יעד 1", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
-          { id: "s2", name: "יעד 2", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
-          { id: "s3", name: "יעד 3", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
-          { id: "s4", name: "יעד 4", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
-        ]);
-        const fallbackCategories = CATEGORY_SEED.map((name) => ({ id: newId(), name }));
-        setCategories(fallbackCategories);
-        setNewExpense((prev) => ({ ...prev, categoryId: fallbackCategories[0]?.id || "" }));
+        // Try to load from localStorage first (offline mode)
+        const savedTrip = loadTripFromLocalStorage();
+        if (savedTrip) {
+          setTripId(savedTrip.tripId || 'local-saved');
+          setStops(savedTrip.stops || []);
+          const savedCategories = savedTrip.categories.length > 0 ? savedTrip.categories : CATEGORY_SEED.map((name) => ({ id: newId(), name }));
+          setCategories(savedCategories);
+          setNewExpense((prev) => ({ ...prev, categoryId: savedCategories[0]?.id || "" }));
+          setExpenses(savedTrip.expenses || []);
+        } else {
+          // Fallback to empty template if no saved data
+          setTripId('local-' + Date.now());
+          setStops([
+            { id: "s1", name: "יעד 1", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
+            { id: "s2", name: "יעד 2", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
+            { id: "s3", name: "יעד 3", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
+            { id: "s4", name: "יעד 4", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" },
+          ]);
+          const fallbackCategories = CATEGORY_SEED.map((name) => ({ id: newId(), name }));
+          setCategories(fallbackCategories);
+          setNewExpense((prev) => ({ ...prev, categoryId: fallbackCategories[0]?.id || "" }));
+        }
       } finally {
         setLoading(false);
       }
@@ -1773,11 +1799,17 @@ export default function App() {
     loadTrip();
   }, []);
 
-  // Save trip name and budget total when they change
+  // Auto-save trip data to localStorage
+  useEffect(() => {
+    const tripData = { tripId, name: tripName, budgetTotal, stops, categories, expenses };
+    saveTripToLocalStorage(tripData);
+  }, [tripId, tripName, budgetTotal, stops, categories, expenses]);
+
+  // Save trip name and budget total to server when they change
   useEffect(() => {
     if (!tripId || tripId.startsWith('local-')) return;
     const timer = setTimeout(() => {
-      fetch(`/api/trips/${tripId}`, {
+      fetchWithOfflineSupport(`/api/trips/${tripId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: tripName, budgetTotal }),
@@ -1838,17 +1870,20 @@ export default function App() {
       s.activities.forEach((a) => all.push({ ...a, type: "פעילות", stopName: s.name }));
       s.transfers.forEach((t) => all.push({ ...t, type: "הסעה", stopName: s.name }));
     });
-    return all[0] || null;
+    return sortByDateTime(all)[0] || null;
   }, [stops]);
 
-  const firstStopDate = stops.find((s) => s.start)?.start;
-  const countdown = daysUntil(firstStopDate);
+  const firstStopDate = useMemo(() => {
+    const datesWithStops = stops.filter((s) => s.start).map((s) => ({ date: new Date(s.start), stop: s }));
+    if (datesWithStops.length === 0) return null;
+    return datesWithStops.sort((a, b) => a.date - b.date)[0].date.toISOString().split('T')[0];
+  }, [stops]);
 
   const updateStop = (id, patch) => {
     setStops((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
     const stop = stops.find(s => s.id === id);
     if (stop && tripId) {
-      fetch(`/api/stops/${id}`, {
+      fetchWithOfflineSupport(`/api/stops/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...stop, ...patch }),
@@ -1861,7 +1896,7 @@ export default function App() {
     const newStop = { id, tripId, name: "יעד חדש", country: "", start: "", end: "", lat: null, lng: null, flights: [], hotels: [], activities: [], transfers: [], notes: "" };
     setStops((prev) => [...prev, newStop]);
     if (tripId) {
-      fetch('/api/stops', {
+      fetchWithOfflineSupport('/api/stops', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newStop),
@@ -1874,7 +1909,7 @@ export default function App() {
   const removeStop = (id) => {
     setStops((prev) => prev.filter((s) => s.id !== id));
     if (tripId) {
-      fetch(`/api/stops/${id}`, {
+      fetchWithOfflineSupport(`/api/stops/${id}`, {
         method: 'DELETE',
       }).catch(err => console.error('Failed to delete stop:', err));
     }
@@ -1885,7 +1920,7 @@ export default function App() {
     const bookingId = newId();
     setStops((prev) => prev.map((s) => (s.id === stopId ? { ...s, [kind]: [...s[kind], { id: bookingId, ...item }] } : s)));
     if (tripId) {
-      fetch('/api/bookings', {
+      fetchWithOfflineSupport('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: bookingId, stopId, kind, ...item }),
@@ -1896,7 +1931,7 @@ export default function App() {
   const removeBookingItem = (stopId, kind, itemId) => {
     setStops((prev) => prev.map((s) => (s.id === stopId ? { ...s, [kind]: s[kind].filter((i) => i.id !== itemId) } : s)));
     if (tripId) {
-      fetch(`/api/bookings/${itemId}`, {
+      fetchWithOfflineSupport(`/api/bookings/${itemId}`, {
         method: 'DELETE',
       }).catch(err => console.error('Failed to delete booking:', err));
     }
@@ -1905,7 +1940,7 @@ export default function App() {
   const editBookingItem = (stopId, kind, itemId, updatedItem) => {
     setStops((prev) => prev.map((s) => (s.id === stopId ? { ...s, [kind]: s[kind].map((i) => (i.id === itemId ? { ...i, ...updatedItem } : i)) } : s)));
     if (tripId) {
-      fetch(`/api/bookings/${itemId}`, {
+      fetchWithOfflineSupport(`/api/bookings/${itemId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ kind, ...updatedItem }),
@@ -1926,7 +1961,7 @@ export default function App() {
     const expenseId = newId();
     setExpenses((prev) => [...prev, { id: expenseId, ...newExpense }]);
     if (tripId) {
-      fetch('/api/expenses', {
+      fetchWithOfflineSupport('/api/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: expenseId, tripId, ...newExpense }),
@@ -1939,7 +1974,7 @@ export default function App() {
   const removeExpense = (id) => {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
     if (tripId) {
-      fetch(`/api/expenses/${id}`, {
+      fetchWithOfflineSupport(`/api/expenses/${id}`, {
         method: 'DELETE',
       }).catch(err => console.error('Failed to delete expense:', err));
     }
@@ -1986,15 +2021,28 @@ export default function App() {
             />
           </div>
           <div className="flex items-center gap-3">
-            {countdown !== null && countdown >= 0 && (
-              <div style={{ color: C.gold, fontSize: 12, opacity: 0.9 }} className="flex items-center gap-1">
-                <span style={{ ...mono, ...ltr, fontWeight: 600 }}>{countdown}</span>
-                <span>ימים לטיול</span>
+            {!isOnline && (
+              <div style={{ color: C.over, fontSize: 11, opacity: 0.9 }} className="flex items-center gap-1.5 px-2 py-1" title="Offline mode - changes will sync when online">
+                <WifiOff size={14} />
+                <span>לא מחובר</span>
+              </div>
+            )}
+            {isOnline && isSyncing && (
+              <div style={{ color: C.gold, fontSize: 11, opacity: 0.9 }} className="flex items-center gap-1.5 px-2 py-1" title="Syncing changes to server">
+                <Loader size={14} style={{ animation: "spin 2s linear infinite" }} />
+                <span>מסונכרן...</span>
+              </div>
+            )}
+            {isOnline && !isSyncing && showSyncSuccess && (
+              <div style={{ color: C.under, fontSize: 11, opacity: 0.9 }} className="flex items-center gap-1.5 px-2 py-1" title="All changes synced">
+                <CheckCircle2 size={14} fill={C.under} />
+                <span>סונכרן</span>
               </div>
             )}
           </div>
         </div>
       </div>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
       <div className="flex-1 overflow-y-auto px-5 py-5" style={{ minHeight: 480 }}>
         {view === "home" && (
@@ -2019,10 +2067,7 @@ export default function App() {
                 }}
               />
               <div style={{ ...display, fontStyle: "italic", color: C.gold, fontSize: 12, letterSpacing: "0.03em", textTransform: "uppercase" }} className="mb-2 opacity-80">{stops.length} יעדים במסלול</div>
-              <div style={{ ...display, color: C.parchment, fontSize: 32, lineHeight: 1.2, letterSpacing: "-0.02em" }} className="mb-3">{countdown !== null && countdown >= 0 ? `${countdown} ימים לטיול` : "תכננו את המסלול"}</div>
-              <div style={{ color: C.textMuted, fontSize: 13 }}>
-                {firstStopDate ? <>יציאה ב-<bdi>{fmtDate(firstStopDate)}</bdi></> : "הוסיפו תאריך טיסה ראשון בלשונית טיול"}
-              </div>
+              <div style={{ ...display, color: C.parchment, fontSize: 32, lineHeight: 1.2, letterSpacing: "-0.02em" }} className="mb-3">הטיול מתחיל כאן<br /><span style={{ fontSize: 18, color: C.gold, opacity: 0.9 }}>כל הפרטים במקום אחד</span></div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
@@ -2057,8 +2102,8 @@ export default function App() {
                 <div style={{ background: `rgba(212,165,116,0.1)`, padding: 8 }} className="rounded-lg w-fit mb-3">
                   <Ticket size={16} color={C.gold} />
                 </div>
-                <div style={{ ...display, color: C.parchment, fontSize: 15, letterSpacing: "-0.01em" }}>{nextBooking ? nextBooking.type : "אין עדיין"}</div>
-                <div style={{ color: C.textMuted, fontSize: 11, marginTop: 6 }}>{nextBooking ? nextBooking.stopName : "הוסיפו הזמנה בלשונית טיול"}</div>
+                <div style={{ ...display, color: C.parchment, fontSize: 15, letterSpacing: "-0.01em" }}>היעד הבא במסלול:</div>
+                <div style={{ color: C.textMuted, fontSize: 11, marginTop: 6 }}>{`${nextBooking?.type} - ${nextBooking?.stopName}`}</div>
               </div>
             </div>
           </div>
@@ -2068,7 +2113,12 @@ export default function App() {
           <div>
             <div style={{ ...display, color: C.parchment, fontSize: 20, letterSpacing: "-0.01em" }} className="mb-5 font-semibold">המסלול שלכם</div>
             {(() => {
-              const displayStops = splitTokyoByOsaka(stops);
+              const sortedStops = [...stops].sort((a, b) => {
+                const aDate = a.start ? new Date(a.start) : new Date(9999, 0, 1);
+                const bDate = b.start ? new Date(b.start) : new Date(9999, 0, 1);
+                return aDate - bDate;
+              });
+              const displayStops = splitTokyoByOsaka(sortedStops);
               return (
                 <>
                   <div className="flex items-center overflow-x-auto pb-3 mb-4">
@@ -2401,7 +2451,12 @@ export default function App() {
                   <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
                     <div style={{ fontSize: 13, color: C.parchment, marginBottom: 10, fontWeight: 500 }}>הוצאות</div>
                     <div className="flex flex-col gap-2" style={{ maxHeight: 300, overflowY: "auto", paddingRight: 4, paddingLeft: 4 }}>
-                      {expenses.map((exp) => {
+                      {[...expenses].sort((a, b) => {
+                        const aStopIdx = stops.findIndex((s) => s.id === a.stopId);
+                        const bStopIdx = stops.findIndex((s) => s.id === b.stopId);
+                        if (aStopIdx !== bStopIdx) return aStopIdx - bStopIdx;
+                        return (a.id || "").localeCompare(b.id || "");
+                      }).map((exp) => {
                         const category = categories.find((c) => c.id === exp.categoryId);
                         return (
                           <div
@@ -2481,7 +2536,11 @@ export default function App() {
             {expandedBudgetSections.has(2) && (
               <div style={{ background: `linear-gradient(135deg, ${C.bgCard}, ${C.bgCardHi})`, border: `1px solid ${C.border}`, boxShadow: shadowSm, borderRadius: "12px", padding: "16px 20px" }}>
                 <div className="flex flex-col gap-2">
-                  {stops.map((s) => {
+                  {[...stops].sort((a, b) => {
+                    const aDate = a.start ? new Date(a.start) : new Date(9999, 0, 1);
+                    const bDate = b.start ? new Date(b.start) : new Date(9999, 0, 1);
+                    return aDate - bDate;
+                  }).map((s) => {
                     const spent = expenses.filter((e) => e.stopId === s.id).reduce((sum, e) => sum + Number(e.amount || 0), 0);
                     return (
                       <div key={s.id} className="flex items-center justify-between">
